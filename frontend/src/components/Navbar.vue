@@ -1,0 +1,283 @@
+<template>
+  <nav class="navbar navbar-default navbar-fixed-top" :class="{ 'navbar-index': isHome, active: isNavbarActive }">
+    <div class="container">
+      <!-- 左侧logo和菜单 -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+          <span class="iconfont icon-menu"></span>
+        </button>
+        <a class="navbar-logo" href="index.html"></a>
+      </div>
+      
+      <div id="navbar" class="navbar--collapse navbar-content">
+        <div class="navbar-col">
+          <ul class="nav navbar-nav" id="nav">
+            <li v-for="link in navLinks" :key="link.path" :class="{ active: route.path === link.path }">
+              <router-link :to="link.path">{{ link.name }}</router-link>
+            </li>
+            <!-- 管理员才能看到的管理菜单 -->
+            <li v-if="isManager">
+              <router-link to="/admin">管理面板</router-link>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- 右侧用户控件 -->
+      <div class="link-group">
+        <!-- 根据登录状态显示不同内容 -->
+        <template v-if="isUserLoggedIn">
+          <div class="user-avatar" @click="toggleUserMenu">
+            <div class="avatar-circle">
+              <span class="avatar-initial">{{ userInitial }}</span>
+            </div>
+            <!-- 用户菜单 -->
+            <div class="user-menu" v-if="showUserMenu">
+              <div class="user-menu-item username">{{ user?.username || '用户' }}</div>
+              <div class="user-menu-item role-info">{{ userRoleDisplay }}</div>
+              <div class="user-menu-item" @click="handleLogout">退出登录</div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <button @click="showLoginModal = true" class="btn btn-login">登录</button><button @click="showRegisterModal = true" class="btn btn-register">注册</button>
+        </template>
+      </div>
+      <!--/.nav-collapse -->
+    </div>
+    
+    <!-- 登录和注册弹窗 -->
+    <LoginModal 
+      v-model="showLoginModal" 
+      @switch-to-register="switchToRegister"
+    />
+    <RegisterModal 
+      v-model="showRegisterModal" 
+      @switch-to-login="switchToLogin"
+    />
+  </nav>
+</template>
+
+<script setup>
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+import LoginModal from './LoginModal.vue';
+import RegisterModal from './RegisterModal.vue';
+
+const route = useRoute();
+const authStore = useAuthStore();
+const isScrolled = ref(false);
+const showLoginModal = ref(false);
+const showRegisterModal = ref(false);
+const showUserMenu = ref(false);
+
+// 获取用户登录状态和信息
+const isUserLoggedIn = computed(() => authStore.isAuthenticated)
+const user = computed(() => authStore.user)
+const isManager = computed(() => authStore.isManager) // 计算是否为管理员
+
+// 计算用户角色显示
+const userRoleDisplay = computed(() => {
+  const role = user.value?.role || 'user'
+  switch(role) {
+    case 'admin': return '超级管理员'
+    case 'manager': return '管理员'
+    case 'teacher': return '教师'
+    default: return '学生'
+  }
+})
+
+// 计算用户头像初始字母
+const userInitial = computed(() => {
+  const username = user.value?.username || '';
+  return username ? username.charAt(0).toUpperCase() : '?';
+})
+
+// 切换用户菜单显示/隐藏
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value;
+  console.log('切换用户菜单显示状态:', showUserMenu.value);
+};
+
+// 点击页面其他地方关闭用户菜单
+const closeUserMenu = (event) => {
+  // 检查点击是否在用户头像之外
+  const avatarEl = document.querySelector('.user-avatar');
+  if (avatarEl && !avatarEl.contains(event.target)) {
+    showUserMenu.value = false;
+  }
+};
+
+// 处理退出登录
+const handleLogout = async () => {
+  await authStore.logout();
+  console.log('用户已退出登录');
+  showUserMenu.value = false;
+};
+
+const navLinks = ref([
+  { name: '首页', path: '/' },
+  { name: '课程资源', path: '/resources' },
+  { name: '作业墙', path: '/homework' }, // Placeholder
+  { name: '作品展示', path: '/showcase' }, // Placeholder
+  { name: '开源社区', path: '/community' }, // Placeholder
+]);
+
+// Check if the current route is the homepage
+const isHome = computed(() => route.path === '/');
+
+// Determine if the navbar should have the 'active' class
+const isNavbarActive = computed(() => {
+  if (!isHome.value) {
+    return true; // Always active on non-home pages
+  }
+  return isScrolled.value; // On home page, depends on scroll position
+});
+
+const handleScroll = () => {
+  if (isHome.value) {
+    isScrolled.value = window.scrollY > 50;
+  }
+};
+
+onMounted(() => {
+  // Initial check for non-home pages
+  if (!isHome.value) {
+    isScrolled.value = true;
+  }
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('click', closeUserMenu);
+  
+  // 检查和输出用户登录状态
+  console.log('导航栏加载 - 用户登录状态:', isUserLoggedIn.value);
+  if (isUserLoggedIn.value) {
+    console.log('用户信息:', user.value);
+  }
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('click', closeUserMenu);
+});
+
+// 处理弹窗切换
+const switchToRegister = () => {
+  showLoginModal.value = false;
+  showRegisterModal.value = true;
+};
+
+const switchToLogin = () => {
+  showRegisterModal.value = false;
+  showLoginModal.value = true;
+};
+</script>
+
+<style scoped>
+/* 容器布局 - 使用flex布局使元素更紧凑 */
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* 改为左对齐，使元素更紧凑 */
+  flex-wrap: nowrap; /* 防止换行 */
+  gap: 5px; /* 组件间的间距 */
+}
+
+/* 调整导航内容区域 */
+.navbar-content {
+  flex-grow: 1;
+  margin: 0 10px; /* 进一步减少左右间距 */
+}
+
+/* 确保按钮继承原有的样式 */
+.btn {
+  display: inline-block;
+  padding: 8px 20px;
+  margin: 0 5px;
+  border: 2px solid;
+  border-radius: 40px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: none;
+}
+
+.btn-login {
+  color: #545ae7;
+  border-color: #545ae7;
+  background-color: transparent;
+}
+
+.btn-login:hover {
+  background-color: #545ae7;
+  color: white;
+}
+
+.btn-register {
+  color: white;
+  border-color: #545ae7;
+  background-color: #545ae7;
+}
+
+.btn-register:hover {
+  background-color: transparent;
+  color: #545ae7;
+}
+/* 用户头像样式 */
+.user-avatar {
+  position: relative;
+  cursor: pointer;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #545ae7;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.avatar-initial {
+  text-transform: uppercase;
+}
+
+/* 用户菜单样式 */
+.user-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 150px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-top: 8px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.user-menu-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.user-menu-item.username {
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+  background-color: #f9f9f9;
+  cursor: default;
+}
+
+.user-menu-item:not(.username):hover {
+  background-color: #f0f0f0;
+}
+</style>

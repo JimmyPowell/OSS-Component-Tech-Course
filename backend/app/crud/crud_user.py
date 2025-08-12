@@ -19,6 +19,10 @@ def create_user(db: Session, user_data: dict) -> User:
         username=user_data["username"],
         email=user_data["email"],
         hashed_password=hashed_password,
+        real_name=user_data["real_name"],
+        phone_number=user_data["phone_number"],
+        school=user_data["school"],
+        avatar_url=user_data.get("avatar_url"),
     )
     db.add(db_user)
     db.commit()

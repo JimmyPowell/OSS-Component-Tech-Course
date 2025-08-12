@@ -48,7 +48,7 @@ def register_user(
     """
     Finalize user registration.
     """
-    new_user = auth_service.finalize_registration(db, redis_client, request.session, request.username, request.password)
+    new_user = auth_service.finalize_registration(db, redis_client, request)
     if not new_user:
         return BadRequest(message="Invalid session, username taken, or other error")
     

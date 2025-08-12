@@ -56,28 +56,29 @@ def verify_code_and_create_session(redis_client: Redis, email: str, code: str) -
 
     return session_token
 
-def finalize_registration(db: Session, redis_client: Redis, session: str, username: str, password: str) -> Optional[models.User]:
+def finalize_registration(db: Session, redis_client: Redis, user_create: schemas.UserCreate) -> Optional[models.User]:
     """
     Finalizes user registration after session validation.
     """
-    session_key = f"session:{session}"
+    session_key = f"session:{user_create.session}"
     email = redis_client.get(session_key)
 
     if not email:
-        return None # Invalid or expired session
+        return None  # Invalid or expired session
 
     email = email.decode('utf-8')
-    
+
     # Double-check verification status
     verification_key = f"verification:{email}"
     verification_data = redis_client.get(verification_key)
     if not verification_data or not json.loads(verification_data).get("verified"):
-        return None # Email not verified
+        return None  # Email not verified
 
-    if crud.crud_user.get_user_by_username(db, username=username):
-        return None # Username already taken
+    if crud.crud_user.get_user_by_username(db, username=user_create.username):
+        return None  # Username already taken
 
-    user_data = {"email": email, "username": username, "password": password}
+    user_data = user_create.dict()
+    user_data["email"] = email
     new_user = crud.crud_user.create_user(db, user_data=user_data)
 
     # Clean up Redis keys

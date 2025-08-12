@@ -15,6 +15,10 @@ class UserCreate(BaseModel):
     session: str
     username: str
     password: str
+    real_name: str
+    phone_number: str
+    school: str
+    avatar_url: Optional[str] = None
 
 # Schema for user login
 class UserLogin(BaseModel):
@@ -28,6 +32,10 @@ class UserBase(BaseModel):
     email: EmailStr
     role: str
     is_active: bool
+    real_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    school: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
