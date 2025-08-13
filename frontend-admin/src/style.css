@@ -75,3 +75,14 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.ant-tooltip-inner {
+  background-color: #ffffff !important;
+  color: #1890ff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.ant-tooltip-arrow::before {
+  background-color: #ffffff !important;
+}

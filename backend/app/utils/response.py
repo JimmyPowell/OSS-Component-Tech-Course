@@ -1,6 +1,7 @@
 from typing import Optional, Any
 from fastapi.responses import JSONResponse
 from fastapi import status
+from fastapi.encoders import jsonable_encoder
 
 def UJSONResponse(
     data: Optional[Any] = None,
@@ -17,7 +18,7 @@ def UJSONResponse(
         content={
             "code": code,
             "message": message,
-            "data": data,
+            "data": jsonable_encoder(data),
         }
     )
 

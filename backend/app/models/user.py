@@ -1,11 +1,13 @@
-from sqlalchemy import Column, Integer, String, Boolean, TIMESTAMP
+from sqlalchemy import Column, String, Boolean, TIMESTAMP
+from sqlalchemy.dialects.mysql import INTEGER
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.config.database import Base
 
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(INTEGER(unsigned=True), primary_key=True, index=True)
     uuid = Column(String(36), unique=True, index=True, nullable=False)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
@@ -19,3 +21,5 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True)
+
+    showcase_comments = relationship("ShowcaseComment", back_populates="user")

@@ -43,3 +43,11 @@ class UserBase(BaseModel):
 # Schema for user response
 class UserResponse(UserBase):
     pass
+
+# Simplified user response for embedding in other schemas
+class UserSimpleResponse(BaseModel):
+    username: str
+    avatar_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True

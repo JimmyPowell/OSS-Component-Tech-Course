@@ -33,7 +33,12 @@ watch(
 );
 
 const menuItems = ref([
-  { key: '/users', title: '用户管理', icon: UserOutlined },
+  {
+    key: 'users',
+    title: '用户管理',
+    icon: UserOutlined,
+    children: [{ key: '/users', title: '用户管理', icon: UserOutlined }],
+  },
   {
     key: 'sub1',
     title: '课程资源管理',
@@ -42,13 +47,38 @@ const menuItems = ref([
       { key: '/ppts', title: '课件PPT管理', icon: ProjectOutlined },
       { key: '/attachments', title: '课程附件管理', icon: FormOutlined },
       { key: '/videos', title: '课程视频管理', icon: VideoCameraOutlined },
-    ]
+    ],
   },
-  { key: '/homework', title: '作业管理', icon: FormOutlined },
-  { key: '/showcase', title: '作品管理', icon: ProjectOutlined },
-  { key: '/forum', title: '论坛内容管理', icon: CommentOutlined },
-  { key: '/announcements', title: '公告管理', icon: NotificationOutlined },
-  { key: '/settings', title: '系统设置', icon: SettingOutlined },
+  {
+    key: 'homework',
+    title: '作业管理',
+    icon: FormOutlined,
+    children: [{ key: '/homework', title: '作业管理', icon: FormOutlined }],
+  },
+  {
+    key: 'showcase',
+    title: '作品管理',
+    icon: ProjectOutlined,
+    children: [{ key: '/showcase', title: '作品管理', icon: ProjectOutlined }],
+  },
+  {
+    key: 'forum',
+    title: '论坛内容管理',
+    icon: CommentOutlined,
+    children: [{ key: '/forum', title: '论坛内容管理', icon: CommentOutlined }],
+  },
+  {
+    key: 'announcements',
+    title: '公告管理',
+    icon: NotificationOutlined,
+    children: [{ key: '/announcements', title: '公告管理', icon: NotificationOutlined }],
+  },
+  {
+    key: 'settings',
+    title: '系统设置',
+    icon: SettingOutlined,
+    children: [{ key: '/settings', title: '系统设置', icon: SettingOutlined }],
+  },
 ]);
 
 const handleOpenChange = (keys) => {
@@ -79,7 +109,10 @@ const toggle = () => {
         </a-menu-item>
         <a-sub-menu v-else :key="item.key">
           <template #title>
-            <span>
+            <router-link v-if="isCollapsed" :to="item.children && item.children.length > 0 ? item.children[0].key : item.key" class="collapsed-link">
+              <component :is="item.icon" />
+            </router-link>
+            <span v-else>
               <component :is="item.icon" />
               <span>{{ item.title }}</span>
             </span>
@@ -179,5 +212,18 @@ const toggle = () => {
 
 :deep(.ant-tooltip-arrow::before) {
   background-color: #ffffff !important;
+}
+.collapsed-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.collapsed-link:hover {
+  color: #1890ff;
 }
 </style>
