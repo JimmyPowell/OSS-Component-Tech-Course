@@ -8,6 +8,10 @@ from app.models.showcase_comment_reply import ShowcaseCommentReply
 from app.schemas.showcase_comment_reply import ShowcaseCommentReplyCreate, ShowcaseCommentReplyUpdate
 
 
+class CRUDShowcaseCommentReply:
+    pass
+
+
 def create_showcase_comment_reply(db: Session, *, reply_in: ShowcaseCommentReplyCreate, user_id: int, comment_id: int) -> ShowcaseCommentReply:
     db_obj = ShowcaseCommentReply(**reply_in.dict(exclude={"comment_uuid"}), uuid=str(uuid.uuid4()), user_id=user_id, comment_id=comment_id)
     db.add(db_obj)
@@ -52,3 +56,6 @@ def remove_showcase_comment_reply(db: Session, *, db_obj: ShowcaseCommentReply) 
     db.commit()
     db.refresh(db_obj)
     return db_obj
+
+
+crud_showcase_comment_reply = CRUDShowcaseCommentReply()

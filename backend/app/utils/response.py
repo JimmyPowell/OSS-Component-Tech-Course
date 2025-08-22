@@ -36,6 +36,9 @@ def BadRequest(message: str = "Bad Request"):
 def Unauthorized(message: str = "Unauthorized"):
     return UJSONResponse(data=None, message=message, status_code=status.HTTP_401_UNAUTHORIZED, code=status.HTTP_401_UNAUTHORIZED)
 
+def Forbidden(message: str = "Forbidden"):
+    return UJSONResponse(data=None, message=message, status_code=status.HTTP_403_FORBIDDEN, code=status.HTTP_403_FORBIDDEN)
+
 def NotFound(message: str = "Not Found"):
     return UJSONResponse(data=None, message=message, status_code=status.HTTP_404_NOT_FOUND, code=status.HTTP_404_NOT_FOUND)
 

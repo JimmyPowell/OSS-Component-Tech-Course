@@ -5,6 +5,7 @@ from datetime import datetime
 import uuid
 
 from app.models.homework import Homework
+from app.models.user import User
 from app.schemas.homework import HomeworkCreate, HomeworkUpdate
 
 
@@ -18,6 +19,43 @@ def create_homework(db: Session, *, homework_in: HomeworkCreate, creator_id: int
 
 def get_homework_by_uuid(db: Session, *, uuid: str) -> Optional[Homework]:
     return db.query(Homework).filter(Homework.uuid == uuid, Homework.deleted_at.is_(None)).first()
+
+
+def get_homework_detail_by_uuid(db: Session, *, uuid: str) -> Optional[dict]:
+    """Get homework with publisher information by UUID"""
+    result = db.query(
+        Homework,
+        User.username,
+        User.avatar_url
+    ).join(
+        User, Homework.creator_id == User.id
+    ).filter(
+        Homework.uuid == uuid,
+        Homework.deleted_at.is_(None)
+    ).first()
+    
+    if not result:
+        return None
+        
+    homework, publisher_name, publisher_avatar = result
+    
+    # Convert to dict and add publisher info
+    homework_dict = {
+        "uuid": homework.uuid,
+        "name": homework.name,
+        "description": homework.description,
+        "content": homework.content,
+        "cover_url": homework.cover_url,
+        "resource_urls": homework.resource_urls,
+        "lasting_time": homework.lasting_time,
+        "creator_id": homework.creator_id,
+        "publisher_name": publisher_name,
+        "publisher_avatar": publisher_avatar,
+        "created_at": homework.created_at,
+        "updated_at": homework.updated_at,
+    }
+    
+    return homework_dict
 
 
 def get_by_name(db: Session, *, name: str) -> Optional[Homework]:

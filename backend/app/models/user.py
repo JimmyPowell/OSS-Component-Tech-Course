@@ -23,3 +23,14 @@ class User(Base):
     deleted_at = Column(TIMESTAMP, nullable=True)
 
     showcase_comments = relationship("ShowcaseComment", back_populates="user")
+    showcase_comment_replies = relationship("ShowcaseCommentReply", foreign_keys="ShowcaseCommentReply.user_id")
+    qiniu_tokens = relationship("QiniuToken", foreign_keys="QiniuToken.user_id", back_populates="user")
+    
+    # Likes relationships
+    showcase_likes = relationship("ShowcaseLike", back_populates="user")
+    showcase_comment_likes = relationship("ShowcaseCommentLike", back_populates="user")
+    showcase_comment_reply_likes = relationship("ShowcaseCommentReplyLike", back_populates="user")
+    
+    # Notification relationships
+    notifications_received = relationship("Notification", foreign_keys="Notification.recipient_id", back_populates="recipient")
+    notifications_sent = relationship("Notification", foreign_keys="Notification.sender_id", back_populates="sender")

@@ -55,3 +55,23 @@ class CourseResourceResponse(BaseModel):
 class PaginatedCourseResourceResponse(BaseModel):
     total: int
     items: List[CourseResourceResponse]
+
+class CourseResourceDetailResponse(BaseModel):
+    uuid: str
+    name: str
+    type: str
+    description: Optional[str]
+    cover_url: Optional[str]
+    resource_url: str
+    file_size: Optional[int]
+    mime_type: Optional[str]
+    download_count: int
+    created_at: datetime
+    updated_at: datetime
+    # 用户信息
+    publisher_id: int
+    publisher_name: str
+    publisher_avatar: Optional[str]
+
+    class Config:
+        from_attributes = True

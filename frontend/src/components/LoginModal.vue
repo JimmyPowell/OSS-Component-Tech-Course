@@ -200,10 +200,17 @@ const handleLogin = async () => {
         localStorage.removeItem('rememberLogin')
       }
       
-      // 延迟关闭模态框和跳转到首页或其他页面
+      // 延迟关闭模态框和跳转
       setTimeout(() => {
         closeModal()
-        router.push('/')
+        // 如果有保存的目标路径，跳转到目标路径，否则跳转到首页
+        const redirectPath = authStore.loginRedirectPath
+        if (redirectPath) {
+          router.push(redirectPath)
+          authStore.hideLoginModal() // 清除重定向路径
+        } else {
+          router.push('/')
+        }
       }, 1200)
     } else {
       // 登录失败显示错误通知

@@ -7,7 +7,7 @@ from app import models, schemas
 from app.api import deps
 from app.services import auth_service
 from app.utils.response import Success, BadRequest, NotFound, Created, Unauthorized
-from app.config.mysql_config import get_mysql_db
+from app.api import deps
 from app.config.redis_config import get_redis_client
 
 router = APIRouter()
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.post("/request-code")
 async def request_code(
     request: schemas.EmailRequest,
-    db: Session = Depends(get_mysql_db),
+    db: Session = Depends(deps.get_db),
     redis_client: Redis = Depends(get_redis_client)
 ):
     """
@@ -42,7 +42,7 @@ def verify_code(
 @router.post("/register")
 def register_user(
     request: schemas.UserCreate,
-    db: Session = Depends(get_mysql_db),
+    db: Session = Depends(deps.get_db),
     redis_client: Redis = Depends(get_redis_client)
 ):
     """
@@ -59,7 +59,7 @@ def register_user(
 @router.post("/login")
 def login_for_access_token(
     request: schemas.UserLogin,
-    db: Session = Depends(get_mysql_db)
+    db: Session = Depends(deps.get_db)
 ):
     """
     Login to get access and refresh tokens (for regular clients with JSON body).
@@ -74,7 +74,7 @@ def login_for_access_token(
 @router.post("/token", response_model=schemas.Token)
 def login_for_swagger(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_mysql_db)
+    db: Session = Depends(deps.get_db)
 ):
     """
     Login for Swagger UI authorization (form data).
@@ -93,7 +93,7 @@ def login_for_swagger(
 @router.post("/refresh")
 def refresh_token(
     request: schemas.TokenRefreshRequest,
-    db: Session = Depends(get_mysql_db),
+    db: Session = Depends(deps.get_db),
     redis_client: Redis = Depends(get_redis_client)
 ):
     """
@@ -120,7 +120,7 @@ def logout(
 @router.post("/change-password")
 def change_password(
     request: schemas.ChangePasswordRequest,
-    db: Session = Depends(get_mysql_db),
+    db: Session = Depends(deps.get_db),
     redis_client: Redis = Depends(get_redis_client),
     current_user: models.User = Depends(deps.get_current_user)
 ):
@@ -136,3 +136,13 @@ def change_password(
         return BadRequest(message="New password cannot be the same as the old password")
         
     return Success(message="Password changed successfully")
+
+@router.get("/me")
+def get_current_user_info(
+    current_user: models.User = Depends(deps.get_current_user)
+):
+    """
+    Get current user information.
+    """
+    user_data = schemas.UserResponse.from_orm(current_user).dict()
+    return Success(data=user_data)

@@ -25,12 +25,12 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref(localStorage.getItem('accessToken') || null)
   const refreshToken = ref(localStorage.getItem('refreshToken') || null)
   const user = ref(JSON.parse(localStorage.getItem('user')) || null)
+  const shouldShowLoginModal = ref(false)
+  const loginRedirectPath = ref(null)
   
   // 计算属性
   const isAuthenticated = computed(() => !!accessToken.value)
   const userRole = computed(() => user.value?.role || 'user')
-  const isManager = computed(() => userRole.value === 'manager' || userRole.value === 'admin')
-  const isAdmin = computed(() => userRole.value === 'admin')
   
   // 会话令牌管理（用于注册流程）
   function setSessionToken(token) {
@@ -51,29 +51,38 @@ export const useAuthStore = defineStore('auth', () => {
       
       setTokens(access_token, refresh_token)
       
-      // 暂时不获取用户信息，直接使用基本信息
       console.log('登录成功，已保存Token：', { access: access_token.substring(0, 15) + '...', refresh: refresh_token.substring(0, 15) + '...' })
       
-      // 解析JWT token获取用户角色
-      const tokenPayload = parseJwt(access_token)
-      console.log('解析的token负载:', tokenPayload)
-      console.log('用户角色:', tokenPayload.role || 'user')
-      console.log('用户ID:', tokenPayload.sub)
-      
-      // 设置基本用户信息（从解析的token中获取role）
-      const basicUser = {
-        username: identifier,
-        email: identifier.includes('@') ? identifier : null,
-        isLoggedIn: true,
-        role: tokenPayload.role || 'user', // 从JWT中获取角色
-        id: tokenPayload.sub // 保存用户ID
+      // 获取用户完整信息
+      try {
+        const userInfo = await fetchUserInfo()
+        if (userInfo) {
+          console.log('已获取完整用户信息:', userInfo)
+        } else {
+          // 如果获取失败，使用基本信息
+          const tokenPayload = parseJwt(access_token)
+          const basicUser = {
+            username: identifier,
+            email: identifier.includes('@') ? identifier : null,
+            role: tokenPayload.role || 'user',
+            id: tokenPayload.sub
+          }
+          user.value = basicUser
+          localStorage.setItem('user', JSON.stringify(basicUser))
+          console.log('使用基本用户信息:', basicUser)
+        }
+      } catch (error) {
+        console.error('获取用户信息失败，使用基本信息', error)
+        const tokenPayload = parseJwt(access_token)
+        const basicUser = {
+          username: identifier,
+          email: identifier.includes('@') ? identifier : null,
+          role: tokenPayload.role || 'user',
+          id: tokenPayload.sub
+        }
+        user.value = basicUser
+        localStorage.setItem('user', JSON.stringify(basicUser))
       }
-      user.value = basicUser
-      localStorage.setItem('user', JSON.stringify(basicUser))
-      console.log('已设置基本用户信息：', basicUser)
-      console.log('用户角色类型:', typeof tokenPayload.role, '值:', tokenPayload.role)
-      console.log('当前用户是否为管理员:', tokenPayload.role === 'manager' || tokenPayload.role === 'admin')
-      console.log('计算属性isManager值:', tokenPayload.role === 'manager' || tokenPayload.role === 'admin')
       
       return { success: true }
     } catch (error) {
@@ -129,7 +138,7 @@ export const useAuthStore = defineStore('auth', () => {
   // 获取用户信息
   async function fetchUserInfo() {
     try {
-      const response = await apiClient.get('/users/me')
+      const response = await apiClient.get('/auth/me')
       user.value = response.data.data
       localStorage.setItem('user', JSON.stringify(user.value))
       return user.value
@@ -165,6 +174,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
+  // 登录弹窗管理
+  function showLoginModal(redirectPath = null) {
+    shouldShowLoginModal.value = true
+    loginRedirectPath.value = redirectPath
+  }
+  
+  function hideLoginModal() {
+    shouldShowLoginModal.value = false
+    loginRedirectPath.value = null
+  }
+  
   // 登出
   async function logout() {
     // 尝试调用登出API
@@ -197,12 +217,12 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken, 
     refreshToken, 
     user,
+    shouldShowLoginModal,
+    loginRedirectPath,
     
     // 计算属性
     isAuthenticated,
     userRole,
-    isManager,
-    isAdmin,
     
     // 方法
     setSessionToken,
@@ -211,6 +231,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     setTokens,
     fetchUserInfo,
-    refreshAccessToken
+    refreshAccessToken,
+    showLoginModal,
+    hideLoginModal
   }
 })

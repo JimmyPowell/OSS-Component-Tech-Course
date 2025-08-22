@@ -47,6 +47,23 @@ class HomeworkResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class HomeworkDetailResponse(BaseModel):
+    uuid: str
+    name: str
+    description: Optional[str]
+    content: Optional[str]
+    cover_url: Optional[str]
+    resource_urls: Optional[List[Any]]
+    lasting_time: Optional[int]
+    creator_id: int
+    publisher_name: Optional[str] = None
+    publisher_avatar: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
 class PaginatedHomeworkResponse(BaseModel):
     total: int
     items: List[HomeworkResponse]

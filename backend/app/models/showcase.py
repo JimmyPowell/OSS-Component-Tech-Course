@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, TIMESTAMP, TEXT, JSON, Enum
 from sqlalchemy.dialects.mysql import INTEGER, LONGTEXT
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 
 from app.config.database import Base
 
@@ -17,9 +18,15 @@ class Showcase(Base):
     project_url = Column(String(512), nullable=True)
     author_id = Column(INTEGER(unsigned=True), nullable=False, index=True)
     tags = Column(JSON, nullable=True)
-    status = Column(Enum('draft', 'published', 'archived'), nullable=False, server_default='draft')
+    status = Column(Enum('draft', 'pending_review', 'published', 'rejected', 'archived'), nullable=False, server_default='draft')
     views_count = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
     likes_count = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    reviewer_id = Column(INTEGER(unsigned=True), nullable=True, index=True)
+    review_comment = Column(TEXT, nullable=True)
+    reviewed_at = Column(TIMESTAMP, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True, index=True)
+
+    # Relationships
+    likes = relationship("ShowcaseLike", back_populates="showcase")

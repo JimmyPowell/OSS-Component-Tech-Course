@@ -5,6 +5,7 @@ from datetime import datetime
 import uuid
 
 from app.models.course_resource import CourseResource
+from app.models.user import User
 from app.schemas.course_resource import CourseResourceCreate, CourseResourceUpdate
 
 
@@ -72,3 +73,39 @@ def remove_course_resource(db: Session, *, db_obj: CourseResource) -> CourseReso
     db.commit()
     db.refresh(db_obj)
     return db_obj
+
+
+def get_course_resource_detail_by_uuid(db: Session, *, uuid: str) -> Optional[dict]:
+    """
+    获取课程资源详情，包含发布者信息
+    返回包含课程资源和用户信息的字典
+    """
+    result = db.query(CourseResource, User).join(
+        User, CourseResource.creator_id == User.id
+    ).filter(
+        CourseResource.uuid == uuid,
+        CourseResource.deleted_at.is_(None),
+        User.deleted_at.is_(None)
+    ).first()
+    
+    if not result:
+        return None
+    
+    resource, user = result
+    
+    return {
+        'uuid': resource.uuid,
+        'name': resource.name,
+        'type': resource.type,
+        'description': resource.description,
+        'cover_url': resource.cover_url,
+        'resource_url': resource.resource_url,
+        'file_size': resource.file_size,
+        'mime_type': resource.mime_type,
+        'download_count': resource.download_count,
+        'created_at': resource.created_at,
+        'updated_at': resource.updated_at,
+        'publisher_id': user.id,
+        'publisher_name': user.real_name or user.username,
+        'publisher_avatar': user.avatar_url
+    }

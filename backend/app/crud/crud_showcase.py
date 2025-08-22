@@ -72,3 +72,25 @@ def remove_showcase(db: Session, *, db_obj: Showcase) -> Showcase:
     db.commit()
     db.refresh(db_obj)
     return db_obj
+
+
+def approve_showcase(db: Session, *, db_obj: Showcase, reviewer_id: int, review_comment: Optional[str] = None) -> Showcase:
+    db_obj.status = 'published'
+    db_obj.reviewer_id = reviewer_id
+    db_obj.review_comment = review_comment
+    db_obj.reviewed_at = datetime.utcnow()
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+
+def reject_showcase(db: Session, *, db_obj: Showcase, reviewer_id: int, review_comment: str) -> Showcase:
+    db_obj.status = 'rejected'
+    db_obj.reviewer_id = reviewer_id
+    db_obj.review_comment = review_comment
+    db_obj.reviewed_at = datetime.utcnow()
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj

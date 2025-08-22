@@ -18,9 +18,9 @@ router = APIRouter()
 @router.post("/")
 def create_showcase_comment_reply(
     *,
-    db: Session = Depends(deps.get_mysql_db),
+    db: Session = Depends(deps.get_db),
     reply_in: ShowcaseCommentReplyCreate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     Create new showcase comment reply.
@@ -35,7 +35,7 @@ def create_showcase_comment_reply(
 
 @router.get("/")
 def read_showcase_comment_replies(
-    db: Session = Depends(deps.get_mysql_db),
+    db: Session = Depends(deps.get_db),
     comment_id: int = Query(...),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
@@ -55,7 +55,7 @@ def read_showcase_comment_replies(
 @router.get("/{uuid}")
 def read_showcase_comment_reply(
     *,
-    db: Session = Depends(deps.get_mysql_db),
+    db: Session = Depends(deps.get_db),
     uuid: str,
 ):
     """
@@ -70,16 +70,22 @@ def read_showcase_comment_reply(
 @router.put("/{uuid}")
 def update_showcase_comment_reply(
     *,
-    db: Session = Depends(deps.get_mysql_db),
+    db: Session = Depends(deps.get_db),
     uuid: str,
     reply_in: ShowcaseCommentReplyUpdate,
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
-    Update a showcase comment reply.
+    Update a showcase comment reply. Users can only update their own replies.
     """
     reply = crud_showcase_comment_reply.get_showcase_comment_reply_by_uuid(db=db, uuid=uuid)
     if not reply:
         return NotFound(message="Showcase comment reply not found")
+    
+    # Check if user is the author of the reply
+    if reply.user_id != current_user.id:
+        return BadRequest(message="You can only update your own replies")
+    
     reply = crud_showcase_comment_reply.update_showcase_comment_reply(db=db, db_obj=reply, obj_in=reply_in)
     return Success(data=ShowcaseCommentReplyResponse.from_orm(reply).model_dump())
 
@@ -87,14 +93,20 @@ def update_showcase_comment_reply(
 @router.delete("/{uuid}")
 def delete_showcase_comment_reply(
     *,
-    db: Session = Depends(deps.get_mysql_db),
+    db: Session = Depends(deps.get_db),
     uuid: str,
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
-    Delete a showcase comment reply.
+    Delete a showcase comment reply. Users can only delete their own replies.
     """
     reply = crud_showcase_comment_reply.get_showcase_comment_reply_by_uuid(db=db, uuid=uuid)
     if not reply:
         return NotFound(message="Showcase comment reply not found")
+    
+    # Check if user is the author of the reply
+    if reply.user_id != current_user.id:
+        return BadRequest(message="You can only delete your own replies")
+    
     reply = crud_showcase_comment_reply.remove_showcase_comment_reply(db=db, db_obj=reply)
     return Success(data=ShowcaseCommentReplyResponse.from_orm(reply).model_dump())

@@ -15,10 +15,6 @@
             <li v-for="link in navLinks" :key="link.path" :class="{ active: route.path === link.path }">
               <router-link :to="link.path">{{ link.name }}</router-link>
             </li>
-            <!-- 管理员才能看到的管理菜单 -->
-            <li v-if="isManager">
-              <router-link to="/admin">管理面板</router-link>
-            </li>
           </ul>
         </div>
       </div>
@@ -29,13 +25,21 @@
         <template v-if="isUserLoggedIn">
           <div class="user-avatar" @click="toggleUserMenu">
             <div class="avatar-circle">
-              <span class="avatar-initial">{{ userInitial }}</span>
+              <img v-if="user?.avatar_url" :src="user.avatar_url" :alt="user.username" class="avatar-image" />
+              <span v-else class="avatar-initial">{{ userInitial }}</span>
             </div>
             <!-- 用户菜单 -->
             <div class="user-menu" v-if="showUserMenu">
-              <div class="user-menu-item username">{{ user?.username || '用户' }}</div>
-              <div class="user-menu-item role-info">{{ userRoleDisplay }}</div>
-              <div class="user-menu-item" @click="handleLogout">退出登录</div>
+              <div class="user-menu-header">
+                <div class="username">{{ displayName }}</div>
+                <div class="role-info">{{ userRoleDisplay }}</div>
+              </div>
+              <div class="user-menu-item" @click="goToProfile">个人资料</div>
+              <div class="user-menu-item" @click="goToMyHomework">我的作业</div>
+              <div class="user-menu-item" @click="goToMyShowcase">我的作品</div>
+              <div class="user-menu-item" @click="goToSettings">设置</div>
+              <div class="user-menu-divider"></div>
+              <div class="user-menu-item logout" @click="handleLogout">退出登录</div>
             </div>
           </div>
         </template>
@@ -59,7 +63,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import LoginModal from './LoginModal.vue';
@@ -75,7 +79,6 @@ const showUserMenu = ref(false);
 // 获取用户登录状态和信息
 const isUserLoggedIn = computed(() => authStore.isAuthenticated)
 const user = computed(() => authStore.user)
-const isManager = computed(() => authStore.isManager) // 计算是否为管理员
 
 // 计算用户角色显示
 const userRoleDisplay = computed(() => {
@@ -88,9 +91,34 @@ const userRoleDisplay = computed(() => {
   }
 })
 
+// 监听auth store的登录弹窗状态
+watch(() => authStore.shouldShowLoginModal, (shouldShow) => {
+  showLoginModal.value = shouldShow
+})
+
+// 监听本地登录弹窗状态变化，同步到auth store
+watch(showLoginModal, (show) => {
+  if (!show && authStore.shouldShowLoginModal) {
+    authStore.hideLoginModal()
+  }
+})
+
+// 计算用户显示名称
+const displayName = computed(() => {
+  const userInfo = user.value;
+  if (!userInfo) return '用户';
+  
+  // 优先显示真实姓名，如果没有则显示用户名
+  if (userInfo.real_name && userInfo.real_name.trim()) {
+    return userInfo.real_name;
+  }
+  
+  return userInfo.username || '用户';
+});
+
 // 计算用户头像初始字母
 const userInitial = computed(() => {
-  const username = user.value?.username || '';
+  const username = displayName.value;
   return username ? username.charAt(0).toUpperCase() : '?';
 })
 
@@ -114,6 +142,34 @@ const handleLogout = async () => {
   await authStore.logout();
   console.log('用户已退出登录');
   showUserMenu.value = false;
+};
+
+// 导航到个人资料页面
+const goToProfile = () => {
+  showUserMenu.value = false;
+  // TODO: 实现个人资料页面
+  console.log('导航到个人资料页面');
+};
+
+// 导航到我的作业页面
+const goToMyHomework = () => {
+  showUserMenu.value = false;
+  // TODO: 实现我的作业页面或在作业页面筛选用户作业
+  console.log('导航到我的作业页面');
+};
+
+// 导航到我的作品页面
+const goToMyShowcase = () => {
+  showUserMenu.value = false;
+  // TODO: 实现我的作品页面或在作品展示页面筛选用户作品
+  console.log('导航到我的作品页面');
+};
+
+// 导航到设置页面
+const goToSettings = () => {
+  showUserMenu.value = false;
+  // TODO: 实现设置页面
+  console.log('导航到设置页面');
 };
 
 const navLinks = ref([
@@ -225,6 +281,7 @@ const switchToLogin = () => {
   background-color: transparent;
   color: #545ae7;
 }
+
 /* 用户头像样式 */
 .user-avatar {
   position: relative;
@@ -248,36 +305,70 @@ const switchToLogin = () => {
   text-transform: uppercase;
 }
 
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 /* 用户菜单样式 */
 .user-menu {
   position: absolute;
   top: 100%;
   right: 0;
-  width: 150px;
+  width: 140px;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-top: 8px;
   z-index: 1000;
   overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.user-menu-header {
+  background: linear-gradient(135deg, #545ae7 0%, #6c5ce7 100%);
+  color: white;
+  padding: 12px;
+}
+
+.user-menu-header .username {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.user-menu-header .role-info {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.user-menu-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 4px 0;
 }
 
 .user-menu-item {
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #333;
-  transition: background-color 0.2s;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
 
-.user-menu-item.username {
-  font-weight: bold;
-  border-bottom: 1px solid #eee;
-  background-color: #f9f9f9;
-  cursor: default;
+.user-menu-item:hover {
+  background-color: #f9fafb;
+  color: #545ae7;
 }
 
-.user-menu-item:not(.username):hover {
-  background-color: #f0f0f0;
+.user-menu-item.logout {
+  color: #dc2626;
+}
+
+.user-menu-item.logout:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
 }
 </style>

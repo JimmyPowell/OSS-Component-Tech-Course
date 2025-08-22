@@ -10,9 +10,8 @@
           <div class="foot-cell">
             <h2>联系我们</h2>
             <ul class="foot-nav">
-              <li>联系人：黄先生/王女士</li>
-              <li>联系电话：0000000000/0000000000</li>
-              <li>地址：山东省青岛市北京上海666街道199号</li>
+              <li>联系人：王莹</li>
+              <li>邮箱：wangying@swc.neu.edu.cn</li>
             </ul>
           </div>
           <div class="foot-cell">

@@ -1,11 +1,22 @@
 <script setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import AdminLayout from './components/AdminLayout.vue';
+
+const route = useRoute();
+
+const showLayout = computed(() => {
+  return route.path !== '/login' && !route.path.startsWith('/video-preview');
+});
 </script>
 
 <template>
-  <AdminLayout>
-    <router-view />
-  </AdminLayout>
+  <div>
+    <AdminLayout v-if="showLayout">
+      <router-view />
+    </AdminLayout>
+    <router-view v-else />
+  </div>
 </template>
 
 <style>

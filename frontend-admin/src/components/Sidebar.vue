@@ -59,7 +59,10 @@ const menuItems = ref([
     key: 'showcase',
     title: '作品管理',
     icon: ProjectOutlined,
-    children: [{ key: '/showcase', title: '作品管理', icon: ProjectOutlined }],
+    children: [
+      { key: '/showcase', title: '作品管理', icon: ProjectOutlined },
+      { key: '/showcase-review', title: '作品审核', icon: FormOutlined },
+    ],
   },
   {
     key: 'forum',
@@ -126,14 +129,7 @@ const toggle = () => {
         </a-sub-menu>
       </template>
     </a-menu>
-    <div class="sidebar-footer">
-      <a-button type="text" block @click="toggle">
-        <template #icon>
-          <component :is="isCollapsed ? MenuUnfoldOutlined : MenuFoldOutlined" />
-        </template>
-        <span v-if="!isCollapsed">折叠侧边栏</span>
-      </a-button>
-    </div>
+    <!-- 折叠按钮已移除 -->
   </div>
 </template>
 

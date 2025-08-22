@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, TEXT
+from sqlalchemy import Column, String, TIMESTAMP, TEXT, ForeignKey
 from sqlalchemy.dialects.mysql import INTEGER
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -12,7 +12,7 @@ class ShowcaseComment(Base):
     id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
     uuid = Column(String(36), unique=True, nullable=False, index=True)
     showcase_id = Column(INTEGER(unsigned=True), nullable=False, index=True)
-    user_id = Column(INTEGER(unsigned=True), nullable=False, index=True)
+    user_id = Column(INTEGER(unsigned=True), ForeignKey("users.id"), nullable=False, index=True)
     content = Column(TEXT, nullable=False)
     likes_count = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
@@ -21,3 +21,4 @@ class ShowcaseComment(Base):
 
     user = relationship("User", back_populates="showcase_comments")
     replies = relationship("ShowcaseCommentReply", back_populates="comment")
+    likes = relationship("ShowcaseCommentLike", back_populates="comment")
