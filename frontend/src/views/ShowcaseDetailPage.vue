@@ -41,7 +41,7 @@
             <div class="author-info">
               <img src="/images/avatat.png" alt="作者头像" class="author-avatar">
               <div class="author-details">
-                <span class="author-name">{{ showcase.author?.name || '匿名用户' }}</span>
+                <span class="author-name">{{ showcase.author?.real_name || showcase.author?.username || '匿名用户' }}</span>
                 <span class="publish-date">{{ formatDate(showcase.created_at) }}</span>
               </div>
             </div>
@@ -52,7 +52,7 @@
                 {{ showcase.views_count || 0 }} 浏览
               </span>
               <span class="stat-item like-stat" @click="toggleLike">
-                <i class="iconfont" :class="isLiked ? 'icon-thumbs-up-fill' : 'icon-thumbs-up'"></i>
+                <i class="iconfont" :class="isLiked ? 'icon-dianzan' : 'icon-dzs'"></i>
                 {{ likeCount }} 点赞
               </span>
             </div>
@@ -93,9 +93,55 @@
       <div class="comments-section">
         <div class="comments-header">
           <h3>评论 ({{ totalComments }})</h3>
-          <button v-if="userStore.isAuthenticated" class="btn btn-primary" @click="showCommentForm = !showCommentForm">
-            {{ showCommentForm ? '取消评论' : '发表评论' }}
-          </button>
+          <div class="comments-controls">
+            <div class="sort-dropdown" ref="sortDropdown" :class="{ open: showDropdown }">
+              <div 
+                class="custom-select"
+                @click="toggleDropdown"
+                :class="{ active: showDropdown }"
+              >
+                <span class="selected-text">{{ getSortText(sortConfig) }}</span>
+                <i class="iconfont icon-down dropdown-icon" :class="{ rotated: showDropdown }"></i>
+              </div>
+              <div class="dropdown-menu" v-if="showDropdown">
+                <div 
+                  class="dropdown-item"
+                  :class="{ active: sortConfig === 'created_at_desc' }"
+                  @click="selectSort('created_at_desc')"
+                >
+                  <i class="iconfont icon-time"></i>
+                  <span>最新评论</span>
+                </div>
+                <div 
+                  class="dropdown-item"
+                  :class="{ active: sortConfig === 'created_at_asc' }"
+                  @click="selectSort('created_at_asc')"
+                >
+                  <i class="iconfont icon-time"></i>
+                  <span>最早评论</span>
+                </div>
+                <div 
+                  class="dropdown-item"
+                  :class="{ active: sortConfig === 'likes_count_desc' }"
+                  @click="selectSort('likes_count_desc')"
+                >
+                  <i class="iconfont icon-dianzan"></i>
+                  <span>点赞最多</span>
+                </div>
+                <div 
+                  class="dropdown-item"
+                  :class="{ active: sortConfig === 'likes_count_asc' }"
+                  @click="selectSort('likes_count_asc')"
+                >
+                  <i class="iconfont icon-dzs"></i>
+                  <span>点赞最少</span>
+                </div>
+              </div>
+            </div>
+            <button v-if="userStore.isAuthenticated" class="btn btn-primary" @click="showCommentForm = !showCommentForm">
+              {{ showCommentForm ? '取消评论' : '发表评论' }}
+            </button>
+          </div>
         </div>
 
         <!-- Comment Form -->
@@ -135,12 +181,12 @@
               <div class="comment-header">
                 <img src="/images/avatat.png" alt="用户头像" class="comment-avatar">
                 <div class="comment-info">
-                  <span class="comment-author">{{ comment.user?.name || '匿名用户' }}</span>
+                  <span class="comment-author">{{ comment.user?.real_name || comment.user?.username || '匿名用户' }}</span>
                   <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                 </div>
                 <div class="comment-actions">
                   <button class="like-btn" @click="toggleCommentLike(comment)">
-                    <i class="iconfont" :class="comment.isLiked ? 'icon-thumbs-up-fill' : 'icon-thumbs-up'"></i>
+                    <i class="iconfont" :class="comment.isLiked ? 'icon-dianzan' : 'icon-dzs'"></i>
                     {{ comment.likes_count || 0 }}
                   </button>
                 </div>
@@ -184,11 +230,11 @@
                   <div class="reply-header">
                     <img src="/images/avatat.png" alt="用户头像" class="reply-avatar">
                     <div class="reply-info">
-                      <span class="reply-author">{{ reply.user?.name || '匿名用户' }}</span>
+                      <span class="reply-author">{{ reply.user?.real_name || reply.user?.username || '匿名用户' }}</span>
                       <span class="reply-date">{{ formatDate(reply.created_at) }}</span>
                     </div>
                     <button class="like-btn" @click="toggleReplyLike(reply)">
-                      <i class="iconfont" :class="reply.isLiked ? 'icon-thumbs-up-fill' : 'icon-thumbs-up'"></i>
+                      <i class="iconfont" :class="reply.isLiked ? 'icon-dianzan' : 'icon-dzs'"></i>
                       {{ reply.likes_count || 0 }}
                     </button>
                   </div>
@@ -211,7 +257,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showcaseAPI } from '@/api/showcase'
 import { useAuthStore } from '@/stores/auth'
@@ -234,6 +280,9 @@ const loadingComments = ref(false)
 const hasMoreComments = ref(false)
 const commentsPage = ref(1)
 const commentsLimit = ref(10)
+const sortConfig = ref('created_at_desc')
+const showDropdown = ref(false)
+const sortDropdown = ref(null)
 
 // Comment form
 const showCommentForm = ref(false)
@@ -304,14 +353,20 @@ const fetchComments = async (page = 1, append = false) => {
   try {
     loadingComments.value = true
     
+    // 后端评论API需要数字ID，不是UUID
     if (!showcase.value || !showcase.value.id) {
-      console.error('作品ID不存在，无法获取评论')
+      console.error('作品ID不存在，无法获取评论', showcase.value)
       return
     }
     
+    const parts = sortConfig.value.split('_')
+    const sortBy = parts.slice(0, -1).join('_') // 除了最后一个元素，其余用_连接
+    const sortOrder = parts[parts.length - 1] // 最后一个元素是排序方向
     const response = await showcaseAPI.getShowcaseComments(showcase.value.id, {
       skip: (page - 1) * commentsLimit.value,
-      limit: commentsLimit.value
+      limit: commentsLimit.value,
+      sort_by: sortBy,
+      sort_order: sortOrder
     })
     
     console.log('评论API响应:', response)
@@ -334,13 +389,20 @@ const fetchComments = async (page = 1, append = false) => {
         }
         
         // Load replies for each comment
-        const repliesResponse = await showcaseAPI.getCommentReplies(comment.id)
         let replies = []
-        
-        if (repliesResponse.data && repliesResponse.data.code === 200) {
-          replies = repliesResponse.data.data.items || []
-        } else if (repliesResponse.success) {
-          replies = repliesResponse.data.items || []
+        try {
+          if (comment.id) {
+            const repliesResponse = await showcaseAPI.getCommentReplies(comment.id)
+            
+            if (repliesResponse.data && repliesResponse.data.code === 200) {
+              replies = repliesResponse.data.data.items || []
+            } else if (repliesResponse.success) {
+              replies = repliesResponse.data.items || []
+            }
+          }
+        } catch (err) {
+          console.error('获取评论回复失败:', err)
+          replies = []
         }
         
         comment.replies = replies
@@ -358,13 +420,22 @@ const fetchComments = async (page = 1, append = false) => {
     } else {
       // Load replies without like status
       await Promise.all(newComments.map(async (comment) => {
-        const repliesResponse = await showcaseAPI.getCommentReplies(comment.id)
-        
-        if (repliesResponse.data && repliesResponse.data.code === 200) {
-          comment.replies = repliesResponse.data.data.items || []
-        } else if (repliesResponse.success) {
-          comment.replies = repliesResponse.data.items || []
-        } else {
+        try {
+          if (comment.id) {
+            const repliesResponse = await showcaseAPI.getCommentReplies(comment.id)
+            
+            if (repliesResponse.data && repliesResponse.data.code === 200) {
+              comment.replies = repliesResponse.data.data.items || []
+            } else if (repliesResponse.success) {
+              comment.replies = repliesResponse.data.items || []
+            } else {
+              comment.replies = []
+            }
+          } else {
+            comment.replies = []
+          }
+        } catch (err) {
+          console.error('获取评论回复失败:', err)
           comment.replies = []
         }
       }))
@@ -431,7 +502,14 @@ const submitComment = async () => {
       content: newComment.value.trim()
     })
     
-    if (response.success) {
+    console.log('评论提交响应:', response)
+    
+    if (response.data && response.data.code === 200) {
+      newComment.value = ''
+      showCommentForm.value = false
+      await fetchComments() // Refresh comments
+    } else if (response.success) {
+      // 兼容旧格式
       newComment.value = ''
       showCommentForm.value = false
       await fetchComments() // Refresh comments
@@ -440,6 +518,39 @@ const submitComment = async () => {
     console.error('发布评论失败:', err)
   } finally {
     submittingComment.value = false
+  }
+}
+
+const toggleDropdown = () => {
+  showDropdown.value = !showDropdown.value
+  console.log('Toggle dropdown:', showDropdown.value)
+}
+
+const selectSort = async (value) => {
+  if (value !== sortConfig.value) {
+    sortConfig.value = value
+    showDropdown.value = false
+    commentsPage.value = 1
+    comments.value = []
+    await fetchComments()
+  } else {
+    showDropdown.value = false
+  }
+}
+
+const getSortText = (value) => {
+  const sortTexts = {
+    'created_at_desc': '最新评论',
+    'created_at_asc': '最早评论',
+    'likes_count_desc': '点赞最多',
+    'likes_count_asc': '点赞最少'
+  }
+  return sortTexts[value] || '最新评论'
+}
+
+const handleClickOutside = (event) => {
+  if (sortDropdown.value && !sortDropdown.value.contains(event.target)) {
+    showDropdown.value = false
   }
 }
 
@@ -551,6 +662,11 @@ const handleImageError = (event) => {
 // Lifecycle
 onMounted(() => {
   fetchShowcaseDetail()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -611,10 +727,15 @@ onMounted(() => {
 
 .breadcrumb {
   display: flex;
+  align-items: center;
   list-style: none;
-  padding: 0;
+  padding: 12px 20px;
   margin: 0;
   font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border: 1px solid #f0f0f0;
 }
 
 .breadcrumb-item {
@@ -623,23 +744,31 @@ onMounted(() => {
 }
 
 .breadcrumb-item:not(:last-child)::after {
-  content: '/';
-  margin: 0 8px;
-  color: #6c757d;
+  content: '>';
+  margin: 0 10px;
+  color: #d1d5db;
+  font-weight: 500;
+  font-size: 12px;
 }
 
 .breadcrumb-link {
-  color: #007bff;
+  color: #6366f1;
   text-decoration: none;
-  transition: color 0.3s;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 .breadcrumb-link:hover {
-  color: #0056b3;
+  color: #4f46e5;
+  background: #f8fafc;
 }
 
 .breadcrumb-item.active {
-  color: #6c757d;
+  color: #374151;
+  font-weight: 600;
+  padding: 4px 8px;
 }
 
 .showcase-header {
@@ -800,6 +929,7 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   padding: 24px;
+  margin-bottom: 40px;
 }
 
 .comments-header {
@@ -809,6 +939,111 @@ onMounted(() => {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #eee;
+}
+
+.comments-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sort-dropdown {
+  position: relative;
+}
+
+.custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 40px;
+  background-color: #fff;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.custom-select:hover {
+  border-color: #545ae7;
+  box-shadow: 0 2px 8px rgba(84, 90, 231, 0.15);
+}
+
+.custom-select.active {
+  border-color: #545ae7;
+  box-shadow: 0 0 0 3px rgba(84, 90, 231, 0.1);
+}
+
+.selected-text {
+  font-weight: 500;
+  color: #333;
+}
+
+.dropdown-icon {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid #e1e5e9;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9ff;
+  color: #545ae7;
+}
+
+.dropdown-item.active {
+  background-color: #545ae7;
+  color: white;
+}
+
+.dropdown-item.active:hover {
+  background-color: #4147d1;
+}
+
+.dropdown-item i {
+  margin-right: 8px;
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.dropdown-item span {
+  font-weight: 500;
 }
 
 .comment-form {
@@ -854,7 +1089,7 @@ onMounted(() => {
 }
 
 .comment-item {
-  padding: 20px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -865,7 +1100,7 @@ onMounted(() => {
 .comment-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .comment-avatar {
@@ -922,7 +1157,7 @@ onMounted(() => {
 
 .comment-footer {
   margin-left: 52px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .reply-btn {
@@ -963,13 +1198,13 @@ onMounted(() => {
 
 .replies-list {
   margin-left: 52px;
-  margin-top: 16px;
+  margin-top: 12px;
   padding-left: 16px;
   border-left: 2px solid #f0f0f0;
 }
 
 .reply-item {
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #f8f8f8;
 }
 
@@ -1036,6 +1271,17 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+  
+  .comments-controls {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .custom-select {
+    width: 100%;
+    min-width: auto;
   }
   
   .comment-content,

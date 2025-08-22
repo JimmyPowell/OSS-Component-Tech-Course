@@ -80,7 +80,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.request.use(
   async (config) => {
     // 如果是刷新token的请求，跳过预处理
-    if (config.url?.includes('/auth/refresh-token')) {
+    if (config.url?.includes('/auth/refresh')) {
       return config;
     }
     

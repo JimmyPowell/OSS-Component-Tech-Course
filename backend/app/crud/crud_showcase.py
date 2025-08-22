@@ -1,10 +1,11 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from typing import Optional, Tuple
 from datetime import datetime
 import uuid
 
 from app.models.showcase import Showcase
+from app.models.user import User
 from app.schemas.showcase import ShowcaseCreate, ShowcaseUpdate
 
 
@@ -17,7 +18,7 @@ def create_showcase(db: Session, *, showcase_in: ShowcaseCreate, author_id: int)
 
 
 def get_showcase_by_uuid(db: Session, *, uuid: str) -> Optional[Showcase]:
-    return db.query(Showcase).filter(Showcase.uuid == uuid, Showcase.deleted_at.is_(None)).first()
+    return db.query(Showcase).options(joinedload(Showcase.author)).filter(Showcase.uuid == uuid, Showcase.deleted_at.is_(None)).first()
 
 
 def get_by_name(db: Session, *, name: str) -> Optional[Showcase]:
@@ -34,7 +35,7 @@ def get_multi(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None
 ) -> Tuple[int, list[Showcase]]:
-    query = db.query(Showcase).filter(Showcase.deleted_at.is_(None))
+    query = db.query(Showcase).options(joinedload(Showcase.author)).filter(Showcase.deleted_at.is_(None))
 
     filters = []
     if name:

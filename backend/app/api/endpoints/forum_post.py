@@ -83,7 +83,7 @@ def create_forum_post(
     *,
     db: Session = Depends(deps.get_db),
     post_in: ForumPostCreate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     创建论坛帖子
@@ -108,7 +108,7 @@ def update_forum_post(
     db: Session = Depends(deps.get_db),
     uuid: str,
     post_in: ForumPostUpdate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     更新论坛帖子
@@ -140,7 +140,7 @@ def delete_forum_post(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     删除论坛帖子

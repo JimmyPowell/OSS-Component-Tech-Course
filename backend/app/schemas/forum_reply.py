@@ -3,6 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 import uuid
 
+from app.schemas.user import UserSimpleResponse
+
 
 class ForumReplyBase(BaseModel):
     content: str = Field(..., min_length=1)
@@ -37,8 +39,10 @@ class ForumReplyResponse(BaseModel):
     content: str
     post_id: int
     user_id: int
+    author: Optional[UserSimpleResponse] = None
     parent_id: Optional[int]
     reply_to_user_id: Optional[int]
+    reply_to_user: Optional[UserSimpleResponse] = None
     is_deleted: bool
     floor_number: Optional[int]
     created_at: datetime

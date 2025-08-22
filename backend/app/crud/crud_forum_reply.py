@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func, desc
 from typing import Optional, Tuple, List
 from datetime import datetime
@@ -30,7 +30,10 @@ def create_forum_reply(db: Session, *, reply_in: ForumReplyCreate, user_id: int)
 
 
 def get_forum_reply_by_uuid(db: Session, *, uuid: str) -> Optional[ForumReply]:
-    return db.query(ForumReply).filter(
+    return db.query(ForumReply).options(
+        joinedload(ForumReply.author),
+        joinedload(ForumReply.reply_to_user)
+    ).filter(
         ForumReply.uuid == uuid, 
         ForumReply.is_deleted == False,
         ForumReply.deleted_at.is_(None)
@@ -65,7 +68,10 @@ def get_replies_by_post(
     parent_id: Optional[int] = None
 ) -> Tuple[int, List[ForumReply]]:
     """获取帖子的回复列表"""
-    query = db.query(ForumReply).filter(
+    query = db.query(ForumReply).options(
+        joinedload(ForumReply.author),
+        joinedload(ForumReply.reply_to_user)
+    ).filter(
         ForumReply.post_id == post_id,
         ForumReply.is_deleted == False,
         ForumReply.deleted_at.is_(None)
@@ -86,7 +92,10 @@ def get_replies_by_post(
 def get_replies_tree(db: Session, *, post_id: int) -> List[ForumReply]:
     """获取帖子的回复树结构"""
     # 获取所有回复
-    all_replies = db.query(ForumReply).filter(
+    all_replies = db.query(ForumReply).options(
+        joinedload(ForumReply.author),
+        joinedload(ForumReply.reply_to_user)
+    ).filter(
         ForumReply.post_id == post_id,
         ForumReply.is_deleted == False,
         ForumReply.deleted_at.is_(None)

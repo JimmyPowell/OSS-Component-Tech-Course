@@ -4,6 +4,18 @@ from datetime import datetime
 from enum import Enum
 import uuid
 
+# Author info for showcase response
+class AuthorInfo(BaseModel):
+    id: int
+    uuid: str
+    username: str
+    email: Optional[str] = None
+    real_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class ShowcaseStatus(str, Enum):
     draft = "draft"
     pending_review = "pending_review"
@@ -48,6 +60,7 @@ class ShowcaseInDB(ShowcaseBase):
         from_attributes = True
 
 class ShowcaseResponse(BaseModel):
+    id: int
     uuid: str
     name: str
     summary: Optional[str]
@@ -55,6 +68,7 @@ class ShowcaseResponse(BaseModel):
     avatar_url: Optional[str]
     project_url: Optional[str]
     author_id: int
+    author: Optional[AuthorInfo] = None
     tags: Optional[List[Any]]
     status: str
     reviewer_id: Optional[int] = None

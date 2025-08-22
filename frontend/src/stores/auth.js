@@ -155,7 +155,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     
     try {
-      const response = await apiClient.post('/auth/refresh-token', {
+      const response = await apiClient.post('/auth/refresh', {
         refresh_token: refreshToken.value
       })
       

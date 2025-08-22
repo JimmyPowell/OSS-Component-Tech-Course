@@ -22,6 +22,7 @@ class User(Base):
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True)
 
+    showcases = relationship("Showcase", back_populates="author")
     showcase_comments = relationship("ShowcaseComment", back_populates="user")
     showcase_comment_replies = relationship("ShowcaseCommentReply", foreign_keys="ShowcaseCommentReply.user_id")
     qiniu_tokens = relationship("QiniuToken", foreign_keys="QiniuToken.user_id", back_populates="user")

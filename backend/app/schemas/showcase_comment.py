@@ -27,6 +27,7 @@ class ShowcaseCommentInDB(ShowcaseCommentBase):
         from_attributes = True
 
 class ShowcaseCommentResponse(BaseModel):
+    id: int
     uuid: str
     showcase_id: int
     user: UserSimpleResponse

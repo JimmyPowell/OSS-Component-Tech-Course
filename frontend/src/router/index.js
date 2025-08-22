@@ -82,6 +82,16 @@ const routes = [
         name: 'ShowcaseDetail',
         component: ShowcaseDetailPage,
       },
+      {
+        path: 'community/forum',
+        name: 'ForumCenter',
+        component: () => import('../views/ForumCenterPage.vue'),
+      },
+      {
+        path: 'community/forum/post/:uuid',
+        name: 'ForumPostDetail',
+        component: () => import('../views/ForumPostDetailPage.vue'),
+      },
     ],
   },
   // Add other routes here later

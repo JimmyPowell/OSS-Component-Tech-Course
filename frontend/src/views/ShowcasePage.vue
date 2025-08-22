@@ -38,7 +38,7 @@
               </div>
               <div class="card-meta">
                 <img src="/images/avatat.png" alt="用户头像">
-                <span>{{ showcase.author?.name || '匿名用户' }}</span>
+                <span>{{ showcase.author?.real_name || showcase.author?.username || '匿名用户' }}</span>
               </div>
               <div class="card-stats">
                 <span class="stat-item">
@@ -46,7 +46,7 @@
                   {{ showcase.views_count || 0 }}
                 </span>
                 <span class="stat-item">
-                  <i class="iconfont icon-thumbs-up"></i>
+                  <i class="iconfont icon-dianzan"></i>
                   {{ showcase.likes_count || 0 }}
                 </span>
               </div>

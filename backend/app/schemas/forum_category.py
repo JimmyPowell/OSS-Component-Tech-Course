@@ -36,6 +36,7 @@ class ForumCategoryInDB(ForumCategoryBase):
 
 
 class ForumCategoryResponse(BaseModel):
+    id: int
     uuid: str
     name: str
     description: Optional[str]

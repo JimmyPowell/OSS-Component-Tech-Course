@@ -39,6 +39,8 @@ def read_showcase_comments(
     showcase_id: int = Query(...),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
+    sort_by: str = Query("created_at", regex="^(created_at|likes_count)$"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$"),
 ):
     """
     Retrieve showcase comments with pagination.
@@ -48,6 +50,8 @@ def read_showcase_comments(
         showcase_id=showcase_id,
         skip=skip,
         limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
     return Success(data={"total": total, "items": [ShowcaseCommentResponse.from_orm(c).model_dump() for c in comments]})
 

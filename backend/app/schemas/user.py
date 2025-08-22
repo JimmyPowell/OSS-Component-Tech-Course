@@ -61,6 +61,7 @@ class UserResponse(UserBase):
 # Simplified user response for embedding in other schemas
 class UserSimpleResponse(BaseModel):
     username: str
+    real_name: Optional[str] = None
     avatar_url: Optional[str] = None
 
     class Config:

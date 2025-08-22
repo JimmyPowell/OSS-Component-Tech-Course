@@ -20,7 +20,7 @@ class ShowcaseCommentReply(Base):
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True, index=True)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], overlaps="showcase_comment_replies")
     reply_to_user = relationship("User", foreign_keys=[reply_to_user_id])
     comment = relationship("ShowcaseComment", back_populates="replies")
     likes = relationship("ShowcaseCommentReplyLike", back_populates="reply")

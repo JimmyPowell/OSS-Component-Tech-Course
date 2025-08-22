@@ -25,9 +25,23 @@ def get_multi_by_showcase_id(
     *,
     showcase_id: int,
     skip: int = 0,
-    limit: int = 10
+    limit: int = 10,
+    sort_by: str = "created_at",
+    sort_order: str = "desc"
 ) -> Tuple[int, list[ShowcaseComment]]:
     query = db.query(ShowcaseComment).options(joinedload(ShowcaseComment.user)).filter(ShowcaseComment.showcase_id == showcase_id, ShowcaseComment.deleted_at.is_(None))
+
+    # Add sorting
+    if sort_by == "created_at":
+        if sort_order == "desc":
+            query = query.order_by(ShowcaseComment.created_at.desc())
+        else:
+            query = query.order_by(ShowcaseComment.created_at.asc())
+    elif sort_by == "likes_count":
+        if sort_order == "desc":
+            query = query.order_by(ShowcaseComment.likes_count.desc())
+        else:
+            query = query.order_by(ShowcaseComment.likes_count.asc())
 
     total = query.count()
     items = query.offset(skip).limit(limit).all()

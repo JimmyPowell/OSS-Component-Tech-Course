@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func, desc
 from typing import Optional, Tuple
 from datetime import datetime
@@ -26,7 +26,11 @@ def create_forum_post(db: Session, *, post_in: ForumPostCreate, user_id: int) ->
 
 
 def get_forum_post_by_uuid(db: Session, *, uuid: str) -> Optional[ForumPost]:
-    return db.query(ForumPost).filter(
+    return db.query(ForumPost).options(
+        joinedload(ForumPost.author),
+        joinedload(ForumPost.category),
+        joinedload(ForumPost.last_reply_user)
+    ).filter(
         ForumPost.uuid == uuid, 
         ForumPost.is_deleted == False,
         ForumPost.deleted_at.is_(None)
@@ -67,7 +71,11 @@ def get_multi(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None
 ) -> Tuple[int, list[ForumPost]]:
-    query = db.query(ForumPost).filter(
+    query = db.query(ForumPost).options(
+        joinedload(ForumPost.author),
+        joinedload(ForumPost.category),
+        joinedload(ForumPost.last_reply_user)
+    ).filter(
         ForumPost.is_deleted == False,
         ForumPost.deleted_at.is_(None)
     )
@@ -109,7 +117,11 @@ def get_hot_posts(db: Session, *, limit: int = 10, days: int = 7) -> list[ForumP
     
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
-    return db.query(ForumPost).filter(
+    return db.query(ForumPost).options(
+        joinedload(ForumPost.author),
+        joinedload(ForumPost.category),
+        joinedload(ForumPost.last_reply_user)
+    ).filter(
         ForumPost.is_deleted == False,
         ForumPost.deleted_at.is_(None),
         ForumPost.created_at >= cutoff_date
