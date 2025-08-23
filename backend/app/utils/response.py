@@ -44,3 +44,7 @@ def NotFound(message: str = "Not Found"):
 
 def InternalServerError(message: str = "Internal Server Error"):
     return UJSONResponse(data=None, message=message, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Aliases for common usage patterns
+success_response = Success
+error_response = BadRequest

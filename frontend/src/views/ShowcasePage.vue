@@ -38,7 +38,7 @@
               </div>
               <div class="card-meta">
                 <img src="/images/avatat.png" alt="用户头像">
-                <span>{{ showcase.author?.real_name || showcase.author?.username || '匿名用户' }}</span>
+                <span>{{ showcase.author?.username || showcase.author?.real_name || '匿名用户' }}</span>
               </div>
               <div class="card-stats">
                 <span class="stat-item">

@@ -50,6 +50,7 @@ class ForumCategorySimple(BaseModel):
 
 
 class ForumPostResponse(BaseModel):
+    id: int
     uuid: str
     title: str
     content: str

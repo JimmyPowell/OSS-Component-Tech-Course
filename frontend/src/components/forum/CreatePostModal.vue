@@ -267,7 +267,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
   color: #2c2f33;
   margin: 0;
@@ -306,7 +306,7 @@ onMounted(() => {
   font-weight: 600;
   color: #2c2f33;
   margin-bottom: 0.5rem;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
 }
 
 .form-select,
@@ -315,7 +315,7 @@ onMounted(() => {
   padding: 0.75rem;
   border: 1px solid #e3e5e8;
   border-radius: 6px;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   transition: all 0.3s ease;
 }
 
@@ -328,7 +328,7 @@ onMounted(() => {
 
 .char-count {
   text-align: right;
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   color: #72767d;
   margin-top: 0.25rem;
 }
@@ -369,7 +369,7 @@ onMounted(() => {
   padding: 0.75rem;
   border: 1px solid #e3e5e8;
   border-radius: 6px;
-  font-size: 1.125rem;
+  font-size: 1.375rem;
   font-family: inherit;
   resize: vertical;
   min-height: 200px;
@@ -383,7 +383,7 @@ onMounted(() => {
 }
 
 .editor-tips {
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   color: #72767d;
   margin-top: 0.5rem;
   font-style: italic;
@@ -402,13 +402,17 @@ onMounted(() => {
 .btn-submit {
   padding: 0.75rem 1.5rem;
   border-radius: 6px;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
+  min-width: auto;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .btn-cancel {
@@ -469,6 +473,7 @@ onMounted(() => {
   .btn-submit {
     width: 100%;
     justify-content: center;
+    flex-shrink: 1;
   }
   
   .editor-toolbar {

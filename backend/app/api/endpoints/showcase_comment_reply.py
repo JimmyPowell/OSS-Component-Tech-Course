@@ -4,7 +4,9 @@ from typing import Optional
 
 from app.api import deps
 from app.crud import crud_showcase_comment_reply, crud_showcase_comment
+from app.crud.crud_notification import crud_notification
 from app.models import User
+from app.schemas.notification import NotificationCreate
 from app.schemas.showcase_comment_reply import (
     ShowcaseCommentReplyCreate,
     ShowcaseCommentReplyUpdate,
@@ -30,6 +32,20 @@ def create_showcase_comment_reply(
         return NotFound(message="Showcase comment not found")
         
     reply = crud_showcase_comment_reply.create_showcase_comment_reply(db=db, reply_in=reply_in, user_id=current_user.id, comment_id=comment.id)
+    
+    # 如果回复者不是原评论作者，则创建回复通知给原评论作者
+    if current_user.id != comment.user_id:
+        notification_in = NotificationCreate(
+            recipient_id=comment.user_id,
+            sender_id=current_user.id,
+            type="reply_comment",
+            title=f"{current_user.username} 回复了您的评论",
+            content=f"回复内容：{reply.content[:50]}{'...' if len(reply.content) > 50 else ''}",
+            related_id=comment.id,
+            related_uuid=comment.uuid
+        )
+        crud_notification.create_notification(db=db, notification_in=notification_in)
+    
     return Success(data=ShowcaseCommentReplyResponse.from_orm(reply).model_dump())
 
 

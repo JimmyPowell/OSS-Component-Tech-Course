@@ -12,6 +12,7 @@ import ForumManagement from '../components/ForumManagement.vue';
 import AnnouncementManagement from '../components/AnnouncementManagement.vue';
 import SystemSettings from '../components/SystemSettings.vue';
 import VideoPreview from '../components/VideoPreview.vue';
+import BlogManagement from '../components/BlogManagement.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -26,6 +27,7 @@ const routes = [
   { path: '/showcase-review', component: ShowcaseReview, meta: { requiresAuth: true } },
   { path: '/forum', component: ForumManagement, meta: { requiresAuth: true } },
   { path: '/announcements', component: AnnouncementManagement, meta: { requiresAuth: true } },
+  { path: '/blogs', component: BlogManagement, meta: { requiresAuth: true } },
   { path: '/settings', component: SystemSettings, meta: { requiresAuth: true } },
   { path: '/video-preview/:uuid', component: VideoPreview, meta: { requiresAuth: true } },
 ];

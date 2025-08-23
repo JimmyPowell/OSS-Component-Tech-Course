@@ -41,7 +41,7 @@
             <div class="author-info">
               <img src="/images/avatat.png" alt="作者头像" class="author-avatar">
               <div class="author-details">
-                <span class="author-name">{{ showcase.author?.real_name || showcase.author?.username || '匿名用户' }}</span>
+                <span class="author-name">{{ showcase.author?.username || showcase.author?.real_name || '匿名用户' }}</span>
                 <span class="publish-date">{{ formatDate(showcase.created_at) }}</span>
               </div>
             </div>
@@ -181,7 +181,7 @@
               <div class="comment-header">
                 <img src="/images/avatat.png" alt="用户头像" class="comment-avatar">
                 <div class="comment-info">
-                  <span class="comment-author">{{ comment.user?.real_name || comment.user?.username || '匿名用户' }}</span>
+                  <span class="comment-author">{{ comment.user?.username || comment.user?.real_name || '匿名用户' }}</span>
                   <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
                 </div>
                 <div class="comment-actions">
@@ -230,7 +230,7 @@
                   <div class="reply-header">
                     <img src="/images/avatat.png" alt="用户头像" class="reply-avatar">
                     <div class="reply-info">
-                      <span class="reply-author">{{ reply.user?.real_name || reply.user?.username || '匿名用户' }}</span>
+                      <span class="reply-author">{{ reply.user?.username || reply.user?.real_name || '匿名用户' }}</span>
                       <span class="reply-date">{{ formatDate(reply.created_at) }}</span>
                     </div>
                     <button class="like-btn" @click="toggleReplyLike(reply)">

@@ -246,18 +246,18 @@ onMounted(() => {
 }
 
 .article-title {
-  font-size: 2.8rem;
+  font-size: 3.2rem; /* 进一步增大标题 */
   font-weight: bold;
   color: #333;
   line-height: 1.3;
-  margin-bottom: 25px;
+  margin-bottom: 30px;
 }
 
 .article-meta {
   display: flex;
   gap: 30px;
   color: #666;
-  font-size: 1.1rem;
+  font-size: 1.4rem; /* 增大元信息字体 */
 }
 
 .article-cover {
@@ -280,7 +280,7 @@ onMounted(() => {
 }
 
 .article-summary p {
-  font-size: 1.3rem;
+  font-size: 1.6rem; /* 增大摘要字体 */
   line-height: 1.7;
   color: #333;
   margin: 0;
@@ -292,29 +292,29 @@ onMounted(() => {
   padding: 50px;
   line-height: 1.8;
   color: #333;
-  font-size: 1.2rem;
+  font-size: 1.5rem; /* 大幅增加正文字体 */
 }
 
 .article-content :deep(p) {
-  margin-bottom: 20px;
-  font-size: 1.2rem;
+  margin-bottom: 25px;
+  font-size: 1.5rem; /* 增大段落字体 */
   line-height: 1.8;
 }
 
 .article-content :deep(h1),
 .article-content :deep(h2),
 .article-content :deep(h3) {
-  margin: 40px 0 20px;
+  margin: 40px 0 25px;
   color: #333;
-  font-size: 1.5rem;
+  font-size: 1.8rem; /* 增大标题字体 */
   font-weight: 600;
 }
 
 .article-content :deep(ul),
 .article-content :deep(ol) {
-  margin: 20px 0;
+  margin: 25px 0;
   padding-left: 30px;
-  font-size: 1.2rem;
+  font-size: 1.5rem; /* 增大列表字体 */
   line-height: 1.8;
 }
 
@@ -324,14 +324,14 @@ onMounted(() => {
   margin: 30px 0;
   color: #666;
   font-style: italic;
-  font-size: 1.2rem;
+  font-size: 1.5rem; /* 增大引用字体 */
 }
 
 .no-content {
   text-align: center;
   color: #999;
   padding: 60px 0;
-  font-size: 1.2rem;
+  font-size: 1.5rem; /* 增大无内容提示字体 */
 }
 
 .article-footer {
@@ -342,7 +342,7 @@ onMounted(() => {
 
 .update-time {
   color: #888;
-  font-size: 1rem;
+  font-size: 1.3rem; /* 增大更新时间字体 */
 }
 
 /* 加载和错误状态 */

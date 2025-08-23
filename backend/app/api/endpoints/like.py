@@ -5,7 +5,9 @@ from app.api import deps
 from app.crud import crud_showcase, crud_showcase_comment
 from app.crud.crud_like import crud_showcase_like, crud_showcase_comment_like, crud_showcase_comment_reply_like
 from app.crud.crud_showcase_comment_reply import crud_showcase_comment_reply
+from app.crud.crud_notification import crud_notification
 from app.models import User
+from app.schemas.notification import NotificationCreate
 from app.schemas.like import (
     ShowcaseLikeCreate,
     ShowcaseCommentLikeCreate,
@@ -52,6 +54,20 @@ def toggle_showcase_like(
             like = crud_showcase_like.create_showcase_like(
                 db=db, like_in=like_in, user_id=current_user.id, showcase_id=showcase.id
             )
+            
+            # 如果点赞者不是作品作者，则创建点赞通知给作品作者
+            if current_user.id != showcase.author_id:
+                notification_in = NotificationCreate(
+                    recipient_id=showcase.author_id,
+                    sender_id=current_user.id,
+                    type="like_showcase",
+                    title=f"{current_user.username} 赞了您的作品",
+                    content=f"在作品《{showcase.name}》中获得了一个赞",
+                    related_id=showcase.id,
+                    related_uuid=showcase.uuid
+                )
+                crud_notification.create_notification(db=db, notification_in=notification_in)
+            
             return Success(data={"liked": True, "message": "Like added", "like": ShowcaseLikeResponse.from_orm(like).model_dump()})
         except ValueError as e:
             return BadRequest(message=str(e))
@@ -111,6 +127,20 @@ def toggle_comment_like(
             like = crud_showcase_comment_like.create_comment_like(
                 db=db, like_in=like_in, user_id=current_user.id, comment_id=comment.id
             )
+            
+            # 如果点赞者不是评论作者，则创建点赞通知给评论作者
+            if current_user.id != comment.user_id:
+                notification_in = NotificationCreate(
+                    recipient_id=comment.user_id,
+                    sender_id=current_user.id,
+                    type="like_comment",
+                    title=f"{current_user.username} 赞了您的评论",
+                    content=f"评论内容：{comment.content[:50]}{'...' if len(comment.content) > 50 else ''}",
+                    related_id=comment.id,
+                    related_uuid=comment.uuid
+                )
+                crud_notification.create_notification(db=db, notification_in=notification_in)
+            
             return Success(data={"liked": True, "message": "Like added", "like": ShowcaseCommentLikeResponse.from_orm(like).model_dump()})
         except ValueError as e:
             return BadRequest(message=str(e))
@@ -170,6 +200,20 @@ def toggle_reply_like(
             like = crud_showcase_comment_reply_like.create_reply_like(
                 db=db, like_in=like_in, user_id=current_user.id, reply_id=reply.id
             )
+            
+            # 如果点赞者不是回复作者，则创建点赞通知给回复作者
+            if current_user.id != reply.user_id:
+                notification_in = NotificationCreate(
+                    recipient_id=reply.user_id,
+                    sender_id=current_user.id,
+                    type="like_comment",
+                    title=f"{current_user.username} 赞了您的回复",
+                    content=f"回复内容：{reply.content[:50]}{'...' if len(reply.content) > 50 else ''}",
+                    related_id=reply.id,
+                    related_uuid=reply.uuid
+                )
+                crud_notification.create_notification(db=db, notification_in=notification_in)
+            
             return Success(data={"liked": True, "message": "Like added", "like": ShowcaseCommentReplyLikeResponse.from_orm(like).model_dump()})
         except ValueError as e:
             return BadRequest(message=str(e))

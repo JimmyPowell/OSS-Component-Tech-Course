@@ -12,6 +12,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SettingOutlined,
+  FileTextOutlined,
 } from '@ant-design/icons-vue';
 
 const props = defineProps({
@@ -75,6 +76,12 @@ const menuItems = ref([
     title: '公告管理',
     icon: NotificationOutlined,
     children: [{ key: '/announcements', title: '公告管理', icon: NotificationOutlined }],
+  },
+  {
+    key: 'blogs',
+    title: '博客管理',
+    icon: FileTextOutlined,
+    children: [{ key: '/blogs', title: '博客管理', icon: FileTextOutlined }],
   },
   {
     key: 'settings',

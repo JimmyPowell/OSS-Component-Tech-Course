@@ -23,7 +23,7 @@ admin_router = APIRouter()
 @router.get("/", response_model=dict)
 def read_notifications(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -46,7 +46,7 @@ def read_notifications(
 @router.get("/unread-count", response_model=dict)
 def get_unread_count(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     获取当前用户未读通知数量
@@ -60,7 +60,7 @@ def read_notification(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     获取通知详情
@@ -81,7 +81,7 @@ def mark_notification_as_read(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     标记通知为已读
@@ -100,7 +100,7 @@ def mark_notification_as_read(
 def mark_all_notifications_as_read(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     标记所有通知为已读
@@ -114,7 +114,7 @@ def delete_notification(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     删除通知
@@ -137,7 +137,7 @@ def create_notification_admin(
     *,
     db: Session = Depends(deps.get_db),
     notification_in: NotificationCreate,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     创建通知（管理员）
@@ -155,7 +155,7 @@ def broadcast_notification(
     db: Session = Depends(deps.get_db),
     title: str,
     content: Optional[str] = None,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     广播通知给所有用户（管理员）

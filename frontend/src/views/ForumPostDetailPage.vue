@@ -38,7 +38,7 @@
             >
             <div class="author-info">
               <span class="author-name">
-                {{ post.author.real_name || post.author.username }}
+                {{ post.author.username || post.author.real_name }}
               </span>
               <span class="post-time">{{ formatTime(post.created_at) }}</span>
             </div>
@@ -108,7 +108,7 @@
               <div class="reply-content">
                 <div class="reply-header">
                   <span class="author-name" v-if="reply.author">
-                    {{ reply.author.real_name || reply.author.username }}
+                    {{ reply.author.username || reply.author.real_name }}
                   </span>
                   <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
                   <span v-if="reply.floor_number" class="floor-number">
@@ -299,7 +299,7 @@ onMounted(async () => {
 .post-detail-page {
   min-height: 100vh;
   background: #f6f7f9;
-  padding: 2rem 0;
+  padding: 10rem 0 2rem 0;
 }
 
 .loading-state, .error-state {
@@ -339,7 +339,8 @@ onMounted(async () => {
 }
 
 .back-nav {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
 }
 
 .post-detail {
@@ -388,7 +389,7 @@ onMounted(async () => {
 }
 
 .post-title {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: #2c2f33;
   line-height: 1.3;
@@ -425,17 +426,18 @@ onMounted(async () => {
 .author-name {
   font-weight: 600;
   color: #5865f2;
+  font-size: 1.125rem;
 }
 
 .post-time {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: #72767d;
 }
 
 .post-stats {
   display: flex;
   gap: 1.5rem;
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   color: #72767d;
 }
 
@@ -447,7 +449,7 @@ onMounted(async () => {
 .content-body {
   line-height: 1.6;
   color: #2c2f33;
-  font-size: 1rem;
+  font-size: 1.25rem;
 }
 
 .content-body :deep(pre.code-block) {
@@ -494,7 +496,7 @@ onMounted(async () => {
 }
 
 .section-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #2c2f33;
   margin: 0;
@@ -548,15 +550,20 @@ onMounted(async () => {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .btn-cancel, .btn-submit {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.5rem;
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  white-space: nowrap;
+  min-width: auto;
+  width: auto;
+  flex-shrink: 0;
 }
 
 .btn-cancel {
@@ -607,12 +614,13 @@ onMounted(async () => {
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 1rem;
 }
 
 .reply-header .author-name {
   font-weight: 600;
   color: #5865f2;
+  font-size: 1rem;
 }
 
 .reply-time {
@@ -631,6 +639,7 @@ onMounted(async () => {
 .reply-body {
   line-height: 1.5;
   color: #2c2f33;
+  font-size: 1.125rem;
 }
 
 .empty-replies {

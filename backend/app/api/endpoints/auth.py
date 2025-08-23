@@ -139,7 +139,7 @@ def change_password(
 
 @router.get("/me")
 def get_current_user_info(
-    current_user: models.User = Depends(deps.get_current_user)
+    current_user: models.User = Depends(deps.get_current_user_obj)
 ):
     """
     Get current user information.

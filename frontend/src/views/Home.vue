@@ -227,166 +227,43 @@
     <div class="page-section">
       <div class="container">
         <div class="section-head">
-          <div class="page-title">社区热门话题</div>
-          <a href="" class="btn-more"><span>更多</span><span class="iconfont icon-a-right"></span></a>
+          <div class="page-title">开源技术博客</div>
+          <router-link to="/blogs" class="btn-more"><span>更多</span><span class="iconfont icon-a-right"></span></router-link>
         </div>
         <div class="swiper-mtr">
           <div class="swiper-container discuss-swiper">
             <div class="swiper-wrapper">
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
+              <div v-for="blog in latestBlogs" :key="blog.uuid" class="swiper-slide">
+                <router-link :to="`/blog/${blog.uuid}`" class="discuss-card">
+                  <div class="discuss-photo">
+                    <img 
+                      :src="blog.cover_url || '/images/photo.png'" 
+                      class="discuss-pic" 
+                      :alt="blog.title"
+                      @error="handleImageError"
+                    >
+                  </div>
+                  <div class="discuss-bd">
+                    <div class="discuss-time">{{ formatBlogDate(blog.created_at) }}</div>
+                    <div class="discuss-title">
+                      {{ blog.title }}
+                    </div>
+                  </div>
+                </router-link>
+              </div>
+              <!-- 如果没有博客数据，显示占位内容 -->
+              <div v-if="latestBlogs.length === 0" class="swiper-slide">
+                <div class="discuss-card empty-card">
                   <div class="discuss-photo">
                     <img src="/images/photo.png" class="discuss-pic" alt="">
                   </div>
                   <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
+                    <div class="discuss-time">暂无内容</div>
                     <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
+                      暂无博客文章
                     </div>
                   </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/blog2.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/blog3.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div><div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/blog2.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="swiper-slide">
-                <a href="" class="discuss-card">
-                  <div class="discuss-photo">
-                    <img src="/images/photo.png" class="discuss-pic" alt="">
-                  </div>
-                  <div class="discuss-bd">
-                    <div class="discuss-time">2025.06.19</div>
-                    <div class="discuss-title">
-                      GitHub 趋势榜 - 实时热门项目和开发者追踪
-                    </div>
-                  </div>
-                </a>
+                </div>
               </div>
             </div>
           </div>
@@ -408,6 +285,7 @@
 import { onMounted, ref, computed } from 'vue';
 import Swiper from 'swiper/bundle';
 import apiClient from '../api';
+import { blogApi } from '../api/blog';
 
 // 作品展示相关状态
 const showcases = ref([]);
@@ -418,6 +296,9 @@ const isFading = ref(false);
 // 公告相关状态
 const announcements = ref([]);
 const featuredAnnouncement = computed(() => announcements.value.length > 0 ? announcements.value[0] : null);
+
+// 博客相关状态
+const latestBlogs = ref([]);
 
 // 当前展示的作品
 const currentShowcase = computed(() => {

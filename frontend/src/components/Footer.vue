@@ -45,7 +45,7 @@
       </div>
       <div class="foot-end">
         <div class="item">© 2013-2025 开源代码课，陪你从入门到精通 版权所有</div>
-        <div class="item"><a href="">常见问题</a></div>
+        <div class="item">powered by <a href="https://github.com/JimmyPowell" target="_blank">JimmyPowell</a></div>
       </div>
     </div>
   </div>

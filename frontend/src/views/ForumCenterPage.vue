@@ -139,7 +139,7 @@
                         class="author-avatar"
                       >
                       <span class="author-name">
-                        {{ post.author.real_name || post.author.username }}
+                        {{ post.author.username || post.author.real_name }}
                       </span>
                     </div>
                     <span class="post-time">{{ formatTime(post.created_at) }}</span>
@@ -159,7 +159,7 @@
                   <div class="last-reply" v-if="post.last_reply_at">
                     <span class="reply-time">{{ formatTime(post.last_reply_at) }}</span>
                     <span class="reply-author" v-if="post.last_reply_user">
-                      {{ post.last_reply_user.real_name || post.last_reply_user.username }}
+                      {{ post.last_reply_user.username || post.last_reply_user.real_name }}
                     </span>
                   </div>
                 </div>
@@ -454,7 +454,7 @@ onMounted(async () => {
 }
 
 .section-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
   color: #2c2f33;
   margin: 0 0 1rem 0;
@@ -497,14 +497,14 @@ onMounted(async () => {
 
 .category-name {
   font-weight: 500;
-  font-size: 1.125rem;
+  font-size: 1.5rem;
 }
 
 .post-count {
   background: rgba(0, 0, 0, 0.1);
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 600;
 }
 
@@ -532,6 +532,7 @@ onMounted(async () => {
   color: #2c2f33;
   margin-bottom: 0.5rem;
   line-height: 1.3;
+  font-size: 1.25rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -541,7 +542,7 @@ onMounted(async () => {
 .hot-post-stats {
   display: flex;
   gap: 0.75rem;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: #72767d;
 }
 
@@ -576,6 +577,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
+  font-size: 1.125rem;
 }
 
 .sort-btn:hover {
@@ -599,7 +601,7 @@ onMounted(async () => {
   border: 1px solid #e3e5e8;
   border-radius: 6px;
   width: 200px;
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
 }
 
 .search-input:focus {
@@ -657,7 +659,7 @@ onMounted(async () => {
   color: #4f545c;
   padding: 0.25rem 0.5rem;
   border-radius: 12px;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -690,7 +692,7 @@ onMounted(async () => {
 }
 
 .post-title {
-  font-size: 1.25rem;
+  font-size: 1.875rem;
   font-weight: 600;
   color: #2c2f33;
   margin: 0 0 0.5rem 0;
@@ -701,7 +703,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 1rem;
+  font-size: 1.375rem;
   color: #72767d;
 }
 
@@ -735,13 +737,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.875rem;
+  font-size: 1.25rem;
   color: #72767d;
 }
 
 .last-reply {
   text-align: right;
-  font-size: 0.8125rem;
+  font-size: 1rem;
   color: #72767d;
   line-height: 1.3;
 }

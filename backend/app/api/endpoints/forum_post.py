@@ -26,7 +26,7 @@ def read_forum_posts(
     db: Session = Depends(deps.get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    category_id: Optional[int] = Query(None),
+    category_id: Optional[str] = Query(None),  # 改为字符串类型接受UUID
     title: Optional[str] = Query(None),
     start_time: Optional[datetime] = Query(None),
     end_time: Optional[datetime] = Query(None),
@@ -34,11 +34,19 @@ def read_forum_posts(
     """
     获取论坛帖子列表
     """
+    # 如果提供了category_id（UUID），转换为数据库ID
+    db_category_id = None
+    if category_id:
+        category = crud_forum_category.get_forum_category_by_uuid(db=db, uuid=category_id)
+        if not category:
+            return BadRequest(message="Invalid category")
+        db_category_id = category.id
+    
     total, posts = crud_forum_post.get_multi(
         db,
         skip=skip,
         limit=limit,
-        category_id=category_id,
+        category_id=db_category_id,
         title=title,
         start_time=start_time,
         end_time=end_time

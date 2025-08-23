@@ -106,6 +106,6 @@ def get_course_resource_detail_by_uuid(db: Session, *, uuid: str) -> Optional[di
         'created_at': resource.created_at,
         'updated_at': resource.updated_at,
         'publisher_id': user.id,
-        'publisher_name': user.real_name or user.username,
+        'publisher_name': user.username or user.real_name,
         'publisher_avatar': user.avatar_url
     }

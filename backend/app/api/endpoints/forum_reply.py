@@ -93,7 +93,7 @@ def create_forum_reply(
     *,
     db: Session = Depends(deps.get_db),
     reply_in: ForumReplyCreate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     创建论坛回复
@@ -126,7 +126,7 @@ def update_forum_reply(
     db: Session = Depends(deps.get_db),
     uuid: str,
     reply_in: ForumReplyUpdate,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     更新论坛回复
@@ -153,7 +153,7 @@ def delete_forum_reply(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_obj),
 ):
     """
     删除论坛回复

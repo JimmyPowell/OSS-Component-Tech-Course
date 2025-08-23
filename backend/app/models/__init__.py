@@ -11,3 +11,4 @@ from .showcase_like import ShowcaseLike
 from .showcase_comment_like import ShowcaseCommentLike
 from .showcase_comment_reply_like import ShowcaseCommentReplyLike
 from .notification import Notification
+from .blog import Blog, BlogTag, BlogTagRelation

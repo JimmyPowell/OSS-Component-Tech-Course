@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like
+from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like, notification, blog
 
 app = FastAPI(title="FastAPI Project Template")
 
@@ -41,6 +41,9 @@ api_router.include_router(forum_post.admin_router, prefix="/admin/forum/posts", 
 api_router.include_router(forum_reply.router, prefix="/forum/replies", tags=["Forum Replies"])
 api_router.include_router(forum_reply.admin_router, prefix="/admin/forum/replies", tags=["Admin Forum Replies"])
 api_router.include_router(like.router, prefix="/likes", tags=["Likes"])
+api_router.include_router(notification.router, prefix="/notifications", tags=["Notifications"])
+api_router.include_router(notification.admin_router, prefix="/admin/notifications", tags=["Admin Notifications"])
+api_router.include_router(blog.router, prefix="/blogs", tags=["Blogs"])
 
 app.include_router(api_router)
 

@@ -147,3 +147,5 @@ Core entities include:
 ## user's notes
 - No need to start the frontend or backend server,as user has started
 - When it comes to the frontend modification,use the playwright to review
+- use chinese when interact with user
+- 如果进行计划或规划的话，需要明确指出修改的侵入性成都、完成的预估时间、复杂度、最佳实践

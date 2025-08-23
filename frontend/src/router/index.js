@@ -83,6 +83,12 @@ const routes = [
         component: ShowcaseDetailPage,
       },
       {
+        path: 'notifications',
+        name: 'NotificationList',
+        component: () => import('../views/NotificationListPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'community/forum',
         name: 'ForumCenter',
         component: () => import('../views/ForumCenterPage.vue'),
@@ -91,6 +97,16 @@ const routes = [
         path: 'community/forum/post/:uuid',
         name: 'ForumPostDetail',
         component: () => import('../views/ForumPostDetailPage.vue'),
+      },
+      {
+        path: 'blogs',
+        name: 'BlogList',
+        component: () => import('../views/BlogListPage.vue'),
+      },
+      {
+        path: 'blog/:uuid',
+        name: 'BlogDetail',
+        component: () => import('../views/BlogDetailPage.vue'),
       },
     ],
   },

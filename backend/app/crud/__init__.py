@@ -4,3 +4,4 @@ from . import crud_announcement
 from . import crud_forum_category
 from . import crud_forum_post
 from . import crud_forum_reply
+from . import crud_blog

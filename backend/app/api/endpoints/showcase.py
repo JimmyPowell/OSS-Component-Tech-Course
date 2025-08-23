@@ -5,7 +5,9 @@ from datetime import datetime
 
 from app.api import deps
 from app.crud import crud_showcase
+from app.crud.crud_notification import crud_notification
 from app.models import User
+from app.schemas.notification import NotificationCreate
 from app.schemas.showcase import (
     ShowcaseCreate,
     ShowcaseUpdate,
@@ -268,6 +270,19 @@ def review_showcase_admin(
             reviewer_id=current_user.id,
             review_comment=review_request.review_comment
         )
+        
+        # 创建审批通过通知
+        notification_in = NotificationCreate(
+            recipient_id=showcase.author_id,
+            admin_id=current_user.id,
+            type="showcase_approved",
+            title=f"作品《{showcase.name}》审核通过",
+            content=review_request.review_comment if review_request.review_comment else "恭喜！您的作品已通过审核并发布。",
+            related_id=showcase.id,
+            related_uuid=showcase.uuid
+        )
+        crud_notification.create_notification(db=db, notification_in=notification_in)
+        
     elif review_request.action == "reject":
         if not review_request.review_comment or not review_request.review_comment.strip():
             return BadRequest(message="Review comment is required when rejecting a showcase")
@@ -277,5 +292,17 @@ def review_showcase_admin(
             reviewer_id=current_user.id,
             review_comment=review_request.review_comment
         )
+        
+        # 创建审批拒绝通知
+        notification_in = NotificationCreate(
+            recipient_id=showcase.author_id,
+            admin_id=current_user.id,
+            type="showcase_rejected",
+            title=f"作品《{showcase.name}》审核未通过",
+            content=review_request.review_comment,
+            related_id=showcase.id,
+            related_uuid=showcase.uuid
+        )
+        crud_notification.create_notification(db=db, notification_in=notification_in)
     
     return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())

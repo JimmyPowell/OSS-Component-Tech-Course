@@ -23,6 +23,40 @@
       <div class="link-group">
         <!-- 根据登录状态显示不同内容 -->
         <template v-if="isUserLoggedIn">
+          <!-- 通知图标 -->
+          <div class="notification-icon" @click="toggleNotificationMenu">
+            <BellOutlined :style="{ fontSize: '20px', color: '#666' }" />
+            <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            
+            <!-- 通知下拉菜单 -->
+            <div class="notification-menu" v-if="showNotificationMenu">
+              <div class="notification-header">
+                <span>通知</span>
+                <button v-if="unreadCount > 0" @click="markAllAsRead" class="mark-all-read">全部已读</button>
+              </div>
+              <div class="notification-list" v-if="notifications.length > 0">
+                <div 
+                  v-for="notification in notifications" 
+                  :key="notification.uuid"
+                  class="notification-item"
+                  :class="{ unread: !notification.is_read }"
+                  @click="handleNotificationClick(notification)"
+                >
+                  <div class="notification-content">
+                    <div class="notification-title">{{ notification.title }}</div>
+                    <div class="notification-text">{{ notification.content }}</div>
+                    <div class="notification-time">{{ formatTime(notification.created_at) }}</div>
+                  </div>
+                  <div v-if="!notification.is_read" class="unread-dot"></div>
+                </div>
+              </div>
+              <div v-else class="notification-empty">暂无通知</div>
+              <div class="notification-footer">
+                <router-link to="/notifications" class="view-all">查看全部</router-link>
+              </div>
+            </div>
+          </div>
+          
           <div class="user-avatar" @click="toggleUserMenu">
             <div class="avatar-circle">
               <img v-if="user?.avatar_url" :src="user.avatar_url" :alt="user.username" class="avatar-image" />
@@ -66,6 +100,8 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { BellOutlined } from '@ant-design/icons-vue';
+import { notificationApi } from '../api/notification';
 import LoginModal from './LoginModal.vue';
 import RegisterModal from './RegisterModal.vue';
 
@@ -75,6 +111,11 @@ const isScrolled = ref(false);
 const showLoginModal = ref(false);
 const showRegisterModal = ref(false);
 const showUserMenu = ref(false);
+
+// 通知相关状态
+const showNotificationMenu = ref(false);
+const notifications = ref([]);
+const unreadCount = ref(0);
 
 // 获取用户登录状态和信息
 const isUserLoggedIn = computed(() => authStore.isAuthenticated)
@@ -172,12 +213,98 @@ const goToSettings = () => {
   console.log('导航到设置页面');
 };
 
+// 通知相关函数
+const toggleNotificationMenu = () => {
+  showNotificationMenu.value = !showNotificationMenu.value;
+  if (showNotificationMenu.value) {
+    fetchNotifications();
+  }
+};
+
+const fetchNotifications = async () => {
+  if (!isUserLoggedIn.value) return;
+  
+  try {
+    const response = await notificationApi.getNotifications({ limit: 10 });
+    if (response.data.code === 200) {
+      notifications.value = response.data.data.items;
+    }
+  } catch (error) {
+    console.error('获取通知失败:', error);
+  }
+};
+
+const fetchUnreadCount = async () => {
+  if (!isUserLoggedIn.value) return;
+  
+  try {
+    const response = await notificationApi.getUnreadCount();
+    if (response.data.code === 200) {
+      unreadCount.value = response.data.data.unread_count;
+    }
+  } catch (error) {
+    console.error('获取未读通知数量失败:', error);
+  }
+};
+
+const markAllAsRead = async () => {
+  try {
+    const response = await notificationApi.markAllAsRead();
+    if (response.data.code === 200) {
+      notifications.value.forEach(n => n.is_read = true);
+      unreadCount.value = 0;
+    }
+  } catch (error) {
+    console.error('标记全部已读失败:', error);
+  }
+};
+
+const handleNotificationClick = async (notification) => {
+  if (!notification.is_read) {
+    try {
+      await notificationApi.markAsRead(notification.uuid);
+      notification.is_read = true;
+      unreadCount.value = Math.max(0, unreadCount.value - 1);
+    } catch (error) {
+      console.error('标记通知已读失败:', error);
+    }
+  }
+  
+  // 根据通知类型跳转到相应页面
+  if (notification.related_uuid) {
+    // TODO: 根据通知类型跳转到相应页面
+    console.log('跳转到相关页面:', notification);
+  }
+  
+  showNotificationMenu.value = false;
+};
+
+const formatTime = (timeString) => {
+  const time = new Date(timeString);
+  const now = new Date();
+  const diff = now - time;
+  
+  if (diff < 60000) return '刚刚';
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+  return `${Math.floor(diff / 86400000)}天前`;
+};
+
+// 点击页面其他地方关闭通知菜单
+const closeNotificationMenu = (event) => {
+  const notificationEl = document.querySelector('.notification-icon');
+  if (notificationEl && !notificationEl.contains(event.target)) {
+    showNotificationMenu.value = false;
+  }
+};
+
 const navLinks = ref([
   { name: '首页', path: '/' },
   { name: '课程资源', path: '/resources' },
-  { name: '作业墙', path: '/homework' }, // Placeholder
-  { name: '作品展示', path: '/showcase' }, // Placeholder
-  { name: '开源社区', path: '/community' }, // Placeholder
+  { name: '作业墙', path: '/homework' },
+  { name: '作品展示', path: '/showcase' },
+  { name: '开源社区', path: '/community' },
+  { name: '技术博客', path: '/blogs' },
 ]);
 
 // Check if the current route is the homepage
@@ -204,17 +331,34 @@ onMounted(() => {
   }
   window.addEventListener('scroll', handleScroll);
   window.addEventListener('click', closeUserMenu);
+  window.addEventListener('click', closeNotificationMenu);
   
   // 检查和输出用户登录状态
   console.log('导航栏加载 - 用户登录状态:', isUserLoggedIn.value);
   if (isUserLoggedIn.value) {
     console.log('用户信息:', user.value);
+    // 获取未读通知数量
+    fetchUnreadCount();
+    // 每隔30秒检查一次未读通知数量
+    setInterval(fetchUnreadCount, 30000);
+  }
+});
+
+// 监听登录状态变化
+watch(isUserLoggedIn, (newValue) => {
+  if (newValue) {
+    fetchUnreadCount();
+  } else {
+    unreadCount.value = 0;
+    notifications.value = [];
+    showNotificationMenu.value = false;
   }
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
   window.removeEventListener('click', closeUserMenu);
+  window.removeEventListener('click', closeNotificationMenu);
 });
 
 // 处理弹窗切换
@@ -370,5 +514,176 @@ const switchToLogin = () => {
 .user-menu-item.logout:hover {
   background-color: #fef2f2;
   color: #dc2626;
+}
+
+/* 通知相关样式 */
+.notification-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 15px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.notification-icon:hover {
+  background-color: rgba(84, 90, 231, 0.1);
+}
+
+.notification-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notification-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  border: 1px solid #e3e5e8;
+  overflow: hidden;
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e3e5e8;
+  background-color: #f9fafb;
+}
+
+.notification-header span {
+  font-weight: 600;
+  color: #2c2f33;
+  font-size: 14px;
+}
+
+.mark-all-read {
+  background: none;
+  border: none;
+  color: #545ae7;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.mark-all-read:hover {
+  background-color: rgba(84, 90, 231, 0.1);
+}
+
+.notification-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f3f4;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.notification-item:hover {
+  background-color: #f9fafb;
+}
+
+.notification-item.unread {
+  background-color: #f8f9ff;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-content {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.notification-title {
+  font-weight: 600;
+  color: #2c2f33;
+  font-size: 13px;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.notification-text {
+  color: #72767d;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.notification-time {
+  color: #99aab5;
+  font-size: 11px;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #545ae7;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.notification-empty {
+  padding: 40px 16px;
+  text-align: center;
+  color: #72767d;
+  font-size: 14px;
+}
+
+.notification-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #e3e5e8;
+  background-color: #f9fafb;
+  text-align: center;
+}
+
+.view-all {
+  color: #545ae7;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.view-all:hover {
+  color: #4c51bf;
+  text-decoration: underline;
 }
 </style>
