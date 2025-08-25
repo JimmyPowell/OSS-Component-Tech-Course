@@ -99,7 +99,7 @@ const routes = [
         component: () => import('../views/ForumPostDetailPage.vue'),
       },
       {
-        path: 'blogs',
+        path: 'community/blogs',
         name: 'BlogList',
         component: () => import('../views/BlogListPage.vue'),
       },

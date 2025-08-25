@@ -304,7 +304,6 @@ const navLinks = ref([
   { name: '作业墙', path: '/homework' },
   { name: '作品展示', path: '/showcase' },
   { name: '开源社区', path: '/community' },
-  { name: '技术博客', path: '/blogs' },
 ]);
 
 // Check if the current route is the homepage

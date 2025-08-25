@@ -11,88 +11,85 @@
           </div>
         </div>
         
-        <!-- Blog列表 -->
-        <div v-else-if="latestBlogs.length > 0" class="blog-list-vertical">
-          <div 
-            v-for="blog in latestBlogs.slice(0, 3)" 
-            :key="blog.uuid" 
-            class="blog-item-row mb-3"
-            @click="goToBlogDetail(blog.uuid)"
-          >
-            <div class="row g-0 align-items-center">
+        <!-- Blog网格列表 -->
+        <div v-else-if="latestBlogs.length > 0" class="blog-grid-container">
+          <div class="blog-grid">
+            <div 
+              v-for="blog in latestBlogs.slice(0, 6)" 
+              :key="blog.uuid" 
+              class="blog-card"
+              @click="goToBlogDetail(blog.uuid)"
+            >
               <!-- 封面图片 -->
-              <div class="col-md-3" v-if="blog.cover_url">
-                <div class="blog-cover-small">
-                  <img 
-                    :src="blog.cover_url" 
-                    :alt="blog.title"
-                    class="img-fluid rounded"
-                  >
+              <div class="blog-cover">
+                <img 
+                  :src="blog.cover_url || '/images/blog-default.png'" 
+                  :alt="blog.title"
+                  class="blog-cover-image"
+                  @error="handleBlogImageError"
+                >
+                <div class="blog-overlay">
+                  <i class="overlay-icon">📖</i>
                 </div>
               </div>
               
-              <!-- 内容区域 -->
-              <div :class="blog.cover_url ? 'col-md-9' : 'col-12'">
-                <div class="blog-content-compact">
-                  <div class="blog-header-info mb-2">
-                    <div class="d-flex align-items-center">
-                      <img 
-                        v-if="blog.author && blog.author.avatar_url"
-                        :src="blog.author.avatar_url" 
-                        :alt="blog.author.username"
-                        class="author-avatar-small me-2"
-                      >
-                      <div class="author-placeholder-small me-2" v-else>
-                        <i class="bi bi-person-circle"></i>
-                      </div>
-                      <span class="author-name">
-                        {{ blog.author ? (blog.author.real_name || blog.author.username) : '未知作者' }}
-                      </span>
-                      <span class="text-muted ms-2">·</span>
-                      <span class="post-time text-muted ms-2">{{ formatTime(blog.created_at) }}</span>
-                      <!-- 标签 -->
-                      <span 
-                        v-if="blog.tags && blog.tags.length > 0"
-                        class="badge tag-small ms-2"
-                        :style="{ backgroundColor: blog.tags[0].color }"
-                      >
-                        {{ blog.tags[0].name }}
-                      </span>
+              <!-- 博客内容 -->
+              <div class="blog-content">
+                <h6 class="blog-title">{{ blog.title }}</h6>
+                <p class="blog-summary" v-if="blog.summary">
+                  {{ truncateText(blog.summary, 60) }}
+                </p>
+                
+                <!-- 作者和时间信息 -->
+                <div class="blog-meta">
+                  <div class="blog-author">
+                    <img 
+                      v-if="blog.author && blog.author.avatar_url"
+                      :src="blog.author.avatar_url" 
+                      :alt="blog.author.username"
+                      class="author-avatar"
+                    >
+                    <div class="author-placeholder" v-else>
+                      <i class="bi bi-person-circle"></i>
                     </div>
+                    <span class="author-name">
+                      {{ blog.author ? (blog.author.real_name || blog.author.username) : '未知作者' }}
+                    </span>
                   </div>
-                  
-                  <h6 class="blog-title-compact mb-2">
-                    <a href="#" @click.prevent="goToBlogDetail(blog.uuid)" class="text-decoration-none">
-                      {{ blog.title }}
-                    </a>
-                  </h6>
-                  
-                  <p class="blog-desc-compact text-muted mb-2" v-if="blog.summary">
-                    {{ blog.summary }}
-                  </p>
-                  
-                  <div class="blog-stats-compact">
+                  <div class="blog-stats">
                     <span class="stat-item">
                       <i class="bi bi-eye"></i>
-                      <span class="num">{{ blog.view_count }} 阅读</span>
+                      {{ blog.view_count || 0 }}
                     </span>
-                    <span class="stat-item ms-3">
+                    <span class="stat-item">
                       <i class="bi bi-heart"></i>
-                      <span class="num">{{ blog.like_count }} 赞</span>
+                      {{ blog.like_count || 0 }}
                     </span>
                   </div>
+                </div>
+                
+                <div class="blog-footer">
+                  <span class="blog-time">{{ formatTime(blog.created_at) }}</span>
+                  <!-- 第一个标签 -->
+                  <span 
+                    v-if="blog.tags && blog.tags.length > 0"
+                    class="blog-tag"
+                    :style="{ backgroundColor: blog.tags[0].color || '#007bff' }"
+                  >
+                    {{ blog.tags[0].name }}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          
-          <!-- 查看更多按钮 -->
-          <div class="text-center mt-4">
-            <router-link to="/blogs" class="btn btn-outline-primary btn-lg">
-              查看更多博客
-              <i class="bi bi-arrow-right ms-1"></i>
-            </router-link>
-          </div>
+        </div>
+        
+        <!-- 查看更多按钮 -->
+        <div v-if="latestBlogs.length > 0" class="blog-more-section text-center">
+          <button class="btn-more" @click="goToBlogList">
+            <i class="bi bi-arrow-right-circle"></i>
+            查看更多博客
+          </button>
         </div>
         
         <!-- 空状态 -->
@@ -122,7 +119,7 @@
                 </div>
                 <div class="post-stats">
                   <span class="view-count">
-                    <i class="icon">👀</i>
+                    <i class="bi bi-eye"></i>
                     {{ post.view_count }}
                   </span>
                   <span class="reply-count">
@@ -212,7 +209,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swiper from 'swiper/bundle'
 import { forumApi } from '../api/forum'
-import { blogUtils } from '../api/blog'
+import { blogApi, blogUtils } from '../api/blog'
 
 const router = useRouter()
 
@@ -240,9 +237,12 @@ const fetchHotPosts = async () => {
 const fetchLatestBlogs = async () => {
   blogsLoading.value = true
   try {
-    const response = await blogUtils.getLatestBlogs(3)
+    const response = await blogApi.getBlogs({ limit: 6, skip: 0 })
     if (response.data.code === 200) {
       latestBlogs.value = response.data.data || []
+    } else {
+      console.log('获取博客失败:', response.data)
+      latestBlogs.value = []
     }
   } catch (error) {
     console.error('获取最新博客失败:', error)
@@ -287,10 +287,28 @@ const navigateToForumCenter = () => {
   router.push('/community/forum')
 }
 
-// 导航到Blog详情
+// 导航到博客详情
 const goToBlogDetail = (blogUuid) => {
   router.push(`/blog/${blogUuid}`)
 }
+
+// 导航到博客列表页
+const goToBlogList = () => {
+  router.push('/community/blogs')
+}
+
+// 处理博客图片加载错误
+const handleBlogImageError = (event) => {
+  event.target.src = '/images/blog-default.png'
+}
+
+// 截取文本
+const truncateText = (text, maxLength = 60) => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
 
 onMounted(async () => {
   // 加载最新博客和热门帖子
@@ -318,7 +336,7 @@ onMounted(async () => {
   background: #ffffff;
   border: 1px solid #e3e5e8;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -340,11 +358,11 @@ onMounted(async () => {
 .post-category {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   background: #f2f3f5;
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
-  font-size: 0.875rem;
+  font-size: 1.125rem;
 }
 
 .category-icon {
@@ -358,23 +376,23 @@ onMounted(async () => {
 
 .post-stats {
   display: flex;
-  gap: 1rem;
-  font-size: 1rem;
+  gap: 1.5rem;
+  font-size: 1.25rem;
   color: #72767d;
 }
 
 .view-count, .reply-count {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 .post-title {
-  font-size: 1.375rem;
+  font-size: 1.75rem;
   font-weight: 600;
   color: #2c2f33;
   line-height: 1.4;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -391,24 +409,24 @@ onMounted(async () => {
 .post-author {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .author-avatar {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .author-name {
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 500;
   color: #5865f2;
 }
 
 .post-time {
-  font-size: 0.9375rem;
+  font-size: 1.125rem;
   color: #72767d;
 }
 
@@ -609,129 +627,246 @@ onMounted(async () => {
     padding: 1rem;
   }
 }
-/* Blog列表样式 */
-.blog-list-vertical {
-  max-width: 800px;
+/* Blog网格样式 */
+.blog-grid-container {
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-.blog-item-row {
+.blog-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.blog-card {
   background: #ffffff;
-  border: 1px solid #e9ecef;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.blog-item-row:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #007bff;
-}
-
-.blog-cover-small {
-  height: 120px;
+  border: 1px solid #e3e5e8;
+  border-radius: 12px;
   overflow: hidden;
-  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: row;
+  height: 240px;
 }
 
-.blog-cover-small img {
+.blog-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  border-color: #5865f2;
+}
+
+.blog-cover {
+  position: relative;
+  width: 280px;
+  height: 100%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.blog-cover-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.blog-content-compact {
-  padding-left: 1rem;
+.blog-card:hover .blog-cover-image {
+  transform: scale(1.05);
 }
 
-.author-avatar-small {
-  width: 24px;
-  height: 24px;
+.blog-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(88, 101, 242, 0.9);
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.blog-card:hover .blog-overlay {
+  opacity: 1;
+}
+
+.overlay-icon {
+  font-size: 14px;
+}
+
+.blog-content {
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #2c2f33;
+  line-height: 1.3;
+  margin: 0 0 0.8rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 4.2rem;
+}
+
+.blog-summary {
+  font-size: 1.4rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 1.2rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.blog-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.blog-author {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.blog-author .author-avatar {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.author-placeholder-small {
-  width: 24px;
-  height: 24px;
-  font-size: 1.2rem;
+.author-placeholder {
+  width: 36px;
+  height: 36px;
+  font-size: 1.8rem;
   color: #6c757d;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.author-name {
-  font-size: 0.875rem;
+.blog-author .author-name {
+  font-size: 1.3rem;
   font-weight: 500;
-  color: #495057;
-}
-
-.post-time {
-  font-size: 0.875rem;
-}
-
-.tag-small {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-}
-
-.blog-title-compact {
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0;
-}
-
-.blog-title-compact a {
-  color: #2c3e50;
-  transition: color 0.2s;
-}
-
-.blog-title-compact a:hover {
-  color: #007bff;
-}
-
-.blog-desc-compact {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  color: #5865f2;
+  max-width: 130px;
   overflow: hidden;
-  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.blog-stats-compact {
-  font-size: 0.8rem;
-  color: #6c757d;
+.blog-stats {
+  display: flex;
+  gap: 1.2rem;
+  font-size: 1.2rem;
+  color: #72767d;
 }
 
-.blog-stats-compact .stat-item {
-  display: inline-flex;
+.stat-item {
+  display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
+.blog-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.blog-time {
+  font-size: 1.2rem;
+  color: #99aab5;
+}
+
+.blog-tag {
+  font-size: 1.1rem;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  font-weight: 500;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 查看更多按钮样式 */
+.blog-more-section {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.btn-more {
+  background: linear-gradient(135deg, #5865f2, #7289da);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-more:hover {
+  background: linear-gradient(135deg, #4752c4, #677bc4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+}
+
+.btn-more i {
+  font-size: 1.1rem;
+}
+
+/* 响应式设计 */
 @media (max-width: 768px) {
-  .blog-content-compact {
-    padding-left: 0;
-    margin-top: 1rem;
+  .blog-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
-  .blog-cover-small {
-    height: 100px;
+  .blog-card {
+    height: 280px;
   }
   
-  .blog-header-info {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .blog-cover {
+    height: 120px;
   }
   
-  .blog-title-compact {
+  .blog-content {
+    padding: 1rem;
+  }
+  
+  .blog-title {
     font-size: 1rem;
+  }
+  
+  .blog-summary {
+    font-size: 0.8rem;
   }
 }
 </style>

@@ -33,34 +33,47 @@
 
       <!-- Showcase Header -->
       <div class="showcase-header">
-        <div class="showcase-info">
-          <h1 class="showcase-title">{{ showcase.name }}</h1>
-          <p class="showcase-description" v-if="showcase.summary">{{ showcase.summary }}</p>
-          
-          <div class="showcase-meta">
-            <div class="author-info">
-              <img src="/images/avatat.png" alt="作者头像" class="author-avatar">
-              <div class="author-details">
-                <span class="author-name">{{ showcase.author?.username || showcase.author?.real_name || '匿名用户' }}</span>
-                <span class="publish-date">{{ formatDate(showcase.created_at) }}</span>
-              </div>
-            </div>
-            
-            <div class="showcase-stats">
-              <span class="stat-item">
+        <!-- Cover Image Section -->
+        <div class="showcase-cover" v-if="showcase.avatar_url">
+          <img :src="showcase.avatar_url" :alt="showcase.name" @error="handleImageError" class="cover-image">
+        </div>
+        
+        <!-- Main Info Card -->
+        <div class="showcase-main-info">
+          <div class="title-section">
+            <h1 class="showcase-title">{{ showcase.name }}</h1>
+            <div class="title-stats">
+              <span class="stat-badge views">
                 <i class="iconfont icon-eye"></i>
-                {{ showcase.views_count || 0 }} 浏览
+                {{ showcase.views_count || 0 }}
               </span>
-              <span class="stat-item like-stat" @click="toggleLike">
+              <button class="stat-badge likes" :class="{ liked: isLiked }" @click="toggleLike">
                 <i class="iconfont" :class="isLiked ? 'icon-dianzan' : 'icon-dzs'"></i>
-                {{ likeCount }} 点赞
-              </span>
+                {{ likeCount }}
+              </button>
             </div>
           </div>
-        </div>
-
-        <div class="showcase-image" v-if="showcase.avatar_url">
-          <img :src="showcase.avatar_url" :alt="showcase.name" @error="handleImageError">
+          
+          <p class="showcase-summary" v-if="showcase.summary">{{ showcase.summary }}</p>
+          
+          <!-- Author Info Card -->
+          <div class="author-card">
+            <img src="/images/avatat.png" alt="作者头像" class="author-avatar">
+            <div class="author-details">
+              <div class="author-name">{{ showcase.author?.username || showcase.author?.real_name || '匿名用户' }}</div>
+              <div class="author-meta">
+                <span class="publish-time">发布于 {{ formatDate(showcase.created_at) }}</span>
+                <span class="author-role" v-if="showcase.author?.role">{{ showcase.author.role === 'manager' ? '管理员' : '学生' }}</span>
+              </div>
+            </div>
+            <!-- Project Link in Author Card -->
+            <div v-if="showcase.project_url" class="quick-actions">
+              <a :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="project-link-btn">
+                <i class="iconfont icon-link"></i>
+                项目链接
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -71,13 +84,22 @@
           <div class="content-text" v-html="formatContent(showcase.detailed_introduction)"></div>
         </div>
 
-        <!-- Project URL -->
-        <div class="content-section" v-if="showcase.project_url">
-          <h3>项目链接</h3>
-          <a :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="project-link">
-            <i class="iconfont icon-link"></i>
-            {{ showcase.project_url }}
-          </a>
+        <!-- Project URL Detail (if needed) -->
+        <div class="content-section" v-if="showcase.project_url && showcase.project_url.length > 50">
+          <h3>项目详细链接</h3>
+          <div class="project-link-detail">
+            <div class="link-preview">
+              <i class="iconfont icon-link"></i>
+              <div class="link-info">
+                <span class="link-title">完整链接地址</span>
+                <span class="link-url">{{ showcase.project_url }}</span>
+              </div>
+              <a :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="visit-btn">
+                <i class="iconfont icon-arrow-right"></i>
+                访问
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Tags -->
@@ -671,6 +693,17 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  padding: 32px 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -772,99 +805,268 @@ onUnmounted(() => {
 }
 
 .showcase-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 32px;
-  margin-bottom: 32px;
-  padding: 24px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-}
-
-.showcase-title {
-  font-size: 28px;
-  font-weight: bold;
-  margin-bottom: 12px;
-  color: #333;
-}
-
-.showcase-description {
-  font-size: 16px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.showcase-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.author-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.author-details {
   display: flex;
   flex-direction: column;
+  margin-bottom: 40px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  overflow: hidden;
 }
 
-.author-name {
-  font-weight: 600;
-  color: #333;
-}
-
-.publish-date {
-  font-size: 14px;
-  color: #666;
-}
-
-.showcase-stats {
-  display: flex;
-  gap: 20px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #666;
-  font-size: 14px;
-}
-
-.like-stat {
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.like-stat:hover {
-  color: #007bff;
-}
-
-.showcase-image {
+.showcase-cover {
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
-.showcase-image img {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 8px;
+.cover-image {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.cover-image:hover {
+  transform: scale(1.05);
+}
+
+.showcase-main-info {
+  padding: 32px;
+}
+
+.title-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 20px;
+}
+
+.showcase-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin: 0;
+  flex: 1;
+}
+
+.title-stats {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.stat-badge.views {
+  background: #f0f4f8;
+  color: #4a5568;
+}
+
+.stat-badge.likes {
+  background: #fef5e7;
+  color: #d69e2e;
+  border: 1px solid #f6e05e;
+}
+
+.stat-badge.likes.liked {
+  background: #fed7d7;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+}
+
+.stat-badge.likes:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(214, 158, 46, 0.3);
+}
+
+.stat-badge.likes.liked:hover {
+  box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+}
+
+.showcase-summary {
+  font-size: 18px;
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 28px;
+  padding: 20px;
+  background: #f7fafc;
+  border-radius: 12px;
+  border-left: 4px solid #4299e1;
+}
+
+.author-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.author-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.author-details {
+  flex: 1;
+}
+
+.author-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 4px;
+}
+
+.author-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.publish-time {
+  font-size: 14px;
+  color: #718096;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.author-role {
+  padding: 4px 12px;
+  background: #4299e1;
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quick-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+}
+
+.project-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+}
+
+.project-link-btn:hover {
+  background: linear-gradient(135deg, #3182ce, #2c5aa0);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
+}
+
+.project-link-btn i {
+  font-size: 16px;
+}
+
+.project-link-detail {
+  background: linear-gradient(135deg, #f0f8ff, #e8f4fd);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #b8daff;
+}
+
+.link-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.link-preview > i {
+  font-size: 24px;
+  color: #4299e1;
+  flex-shrink: 0;
+}
+
+.link-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link-title {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 16px;
+}
+
+.link-url {
+  color: #4a5568;
+  font-size: 14px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.visit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  text-decoration: none;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.visit-btn:hover {
+  background: linear-gradient(135deg, #3182ce, #2c5aa0);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+}
+
+.visit-btn i {
+  font-size: 14px;
 }
 
 .showcase-content {
@@ -872,64 +1074,89 @@ onUnmounted(() => {
 }
 
 .content-section {
-  margin-bottom: 24px;
-  padding: 24px;
+  margin-bottom: 32px;
+  padding: 32px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  border: 1px solid #f0f4f8;
+  transition: all 0.3s ease;
+}
+
+.content-section:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 .content-section h3 {
-  font-size: 20px;
-  margin-bottom: 16px;
-  color: #333;
-  border-bottom: 2px solid #007bff;
-  padding-bottom: 8px;
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #2d3748;
+  position: relative;
+  font-weight: 700;
+  padding-left: 20px;
+}
+
+.content-section h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  border-radius: 2px;
 }
 
 .content-text {
   line-height: 1.8;
-  color: #555;
+  color: #4a5568;
+  font-size: 16px;
+  margin-bottom: 0;
 }
 
-.project-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #007bff;
-  text-decoration: none;
-  padding: 8px 16px;
-  border: 1px solid #007bff;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
-
-.project-link:hover {
-  background: #007bff;
-  color: white;
-}
+/* Removed separate project-link styles as they are now integrated into author card */
 
 .tags-container {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 
 .tag {
-  background: #f8f9fa;
-  color: #495057;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  border: 1px solid #dee2e6;
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  color: #4a5568;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tag:hover {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
 }
 
 .comments-section {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  padding: 32px;
   margin-bottom: 40px;
+  border: 1px solid #f0f4f8;
+}
+
+.comments-section h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 0;
 }
 
 .comments-header {
@@ -1047,19 +1274,29 @@ onUnmounted(() => {
 }
 
 .comment-form {
-  margin-bottom: 24px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
 }
 
 .comment-textarea {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
   resize: vertical;
+  font-size: 16px;
+  line-height: 1.5;
+  transition: border-color 0.3s ease;
+}
+
+.comment-textarea:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
 .comment-actions {
@@ -1089,8 +1326,16 @@ onUnmounted(() => {
 }
 
 .comment-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 0;
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.3s ease;
+}
+
+.comment-item:hover {
+  background: #f8fafc;
+  border-radius: 12px;
+  margin: 0 -16px;
+  padding: 20px 16px;
 }
 
 .comment-item:last-child {
@@ -1134,19 +1379,93 @@ onUnmounted(() => {
 .like-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  color: #666;
+  gap: 6px;
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  border: 1px solid #e2e8f0;
+  color: #718096;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.3s;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 60px;
+  justify-content: center;
 }
 
 .like-btn:hover {
-  background: #f8f9fa;
-  color: #007bff;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+  border-color: #4299e1;
+}
+
+/* Custom button styles override */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #4299e1, #3182ce) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+  border: none !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #3182ce, #2c5aa0) !important;
+  color: white !important;
+  box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #718096, #4a5568) !important;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(113, 128, 150, 0.3);
+  border: none !important;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #4a5568, #2d3748) !important;
+  color: white !important;
+  box-shadow: 0 6px 16px rgba(113, 128, 150, 0.4);
+}
+
+.btn-outline-primary {
+  background: transparent !important;
+  color: #4299e1 !important;
+  border: 2px solid #4299e1 !important;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.15);
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(135deg, #4299e1, #3182ce) !important;
+  color: white !important;
+  box-shadow: 0 6px 16px rgba(66, 153, 225, 0.4);
+}
+
+.btn-sm {
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
 }
 
 .comment-content {
@@ -1161,33 +1480,50 @@ onUnmounted(() => {
 }
 
 .reply-btn {
-  background: none;
-  border: none;
-  color: #007bff;
+  background: linear-gradient(135deg, #ebf8ff, #e6fffa);
+  border: 1px solid #4299e1;
+  color: #4299e1;
   cursor: pointer;
-  font-size: 14px;
-  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
 }
 
 .reply-btn:hover {
-  text-decoration: underline;
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+  text-decoration: none;
 }
 
 .reply-form {
   margin-left: 52px;
-  margin-top: 12px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
+  margin-top: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
 }
 
 .reply-textarea {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 8px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
   resize: vertical;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: border-color 0.3s ease;
+}
+
+.reply-textarea:focus {
+  outline: none;
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
 .reply-actions {
@@ -1257,14 +1593,61 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .showcase-header {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .showcase-main-info {
+    padding: 24px 20px;
   }
   
-  .showcase-meta {
+  .title-section {
     flex-direction: column;
     align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .showcase-title {
+    font-size: 24px;
+  }
+  
+  .title-stats {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .showcase-summary {
+    font-size: 16px;
+    padding: 16px;
+  }
+  
+  .author-card {
+    padding: 20px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .author-meta {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  
+  .quick-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .project-link-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .link-preview {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .visit-btn {
+    align-self: flex-start;
   }
   
   .comments-header {

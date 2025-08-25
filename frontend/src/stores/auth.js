@@ -24,7 +24,15 @@ export const useAuthStore = defineStore('auth', () => {
   const sessionToken = ref(localStorage.getItem('sessionToken') || null)
   const accessToken = ref(localStorage.getItem('accessToken') || null)
   const refreshToken = ref(localStorage.getItem('refreshToken') || null)
-  const user = ref(JSON.parse(localStorage.getItem('user')) || null)
+  const user = ref((() => {
+    try {
+      const userData = localStorage.getItem('user')
+      return userData ? JSON.parse(userData) : null
+    } catch (e) {
+      console.error('解析用户数据失败:', e)
+      return null
+    }
+  })())
   const shouldShowLoginModal = ref(false)
   const loginRedirectPath = ref(null)
   

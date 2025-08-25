@@ -1,102 +1,79 @@
-import api from './index'
+import apiClient from './index.js'
 
-// Blog标签相关API
-export const blogTagApi = {
-  // 获取所有标签
-  getAllTags(params = {}) {
-    return api.get('/blogs/tags', { params })
+export const blogApi = {
+  // 获取博客列表
+  getBlogs(params = {}) {
+    return apiClient.get('/blogs/', { params })
+  },
+
+  // 根据UUID获取博客详情
+  getBlogByUuid(uuid) {
+    return apiClient.get(`/blogs/${uuid}`)
+  },
+
+  // 搜索博客
+  searchBlogs(params = {}) {
+    return apiClient.get('/blogs/search', { params })
+  },
+
+  // 获取博客标签
+  getTags(params = {}) {
+    return apiClient.get('/blogs/tags', { params })
   },
 
   // 获取热门标签
-  getPopularTags(limit = 10) {
-    return api.get('/blogs/tags/popular', { params: { limit } })
+  getPopularTags(params = {}) {
+    return apiClient.get('/blogs/tags/popular', { params })
   },
 
-  // 创建标签（管理员权限）
-  createTag(tagData) {
-    return api.post('/blogs/tags', tagData)
-  }
-}
-
-// Blog文章相关API
-export const blogApi = {
-  // 获取Blog列表（仅已发布）
-  getBlogs(params = {}) {
-    const { skip = 0, limit = 10 } = params
-    return api.get('/blogs/', { params: { skip, limit } })
-  },
-
-  // 搜索Blog文章
-  searchBlogs(searchParams = {}) {
-    const {
-      keyword,
-      tag_ids = [],
-      author_id,
-      status = 'published',
-      page = 1,
-      size = 10
-    } = searchParams
-    
-    const params = { page, size, status }
-    if (keyword) params.keyword = keyword
-    if (tag_ids.length > 0) params.tag_ids = tag_ids
-    if (author_id) params.author_id = author_id
-    
-    return api.get('/blogs/search', { params })
-  },
-
-  // 根据UUID获取Blog详情
-  getBlogDetail(blogUuid) {
-    return api.get(`/blogs/${blogUuid}`)
-  },
-
-  // 获取指定作者的Blog列表
+  // 根据作者获取博客
   getBlogsByAuthor(authorId, params = {}) {
-    const { skip = 0, limit = 10 } = params
-    return api.get(`/blogs/author/${authorId}`, { params: { skip, limit } })
+    return apiClient.get(`/blogs/author/${authorId}`, { params })
   },
 
-  // 增加Blog浏览次数
-  incrementViewCount(blogUuid, increment = 1) {
-    return api.put(`/blogs/${blogUuid}/view`, { increment })
-  },
-
-  // 创建Blog文章（管理员权限）
-  createBlog(blogData) {
-    return api.post('/blogs/', blogData)
-  },
-
-  // 更新Blog文章（管理员权限或作者本人）
-  updateBlog(blogUuid, blogData) {
-    return api.put(`/blogs/${blogUuid}`, blogData)
-  },
-
-  // 删除Blog文章（管理员权限或作者本人）
-  deleteBlog(blogUuid) {
-    return api.delete(`/blogs/${blogUuid}`)
+  // 增加博客浏览次数
+  incrementViewCount(uuid, increment = 1) {
+    return apiClient.put(`/blogs/${uuid}/view`, { increment })
   }
 }
 
-// 便捷方法
+// 博客工具函数
 export const blogUtils = {
-  // 获取最新的几篇Blog（用于主页显示）
-  getLatestBlogs(limit = 3) {
-    return blogApi.getBlogs({ skip: 0, limit })
+  // 获取最新博客
+  async getLatestBlogs(limit = 10) {
+    return blogApi.getBlogs({ limit, skip: 0 })
   },
 
-  // 根据标签搜索Blog
-  getBlogsByTags(tagIds, limit = 10) {
-    return blogApi.searchBlogs({ tag_ids: tagIds, size: limit })
+  // 格式化博客时间
+  formatBlogTime(dateString) {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = now - date
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    
+    if (days === 0) {
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      if (hours === 0) {
+        const minutes = Math.floor(diff / (1000 * 60))
+        return minutes <= 0 ? '刚刚' : `${minutes}分钟前`
+      }
+      return `${hours}小时前`
+    } else if (days < 7) {
+      return `${days}天前`
+    } else {
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+    }
   },
 
-  // 根据关键词搜索Blog
-  searchBlogsByKeyword(keyword, limit = 10) {
-    return blogApi.searchBlogs({ keyword, size: limit })
+  // 截取摘要文本
+  truncateText(text, maxLength = 120) {
+    if (!text) return ''
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength) + '...'
   }
-}
-
-export default {
-  ...blogApi,
-  tags: blogTagApi,
-  utils: blogUtils
 }
