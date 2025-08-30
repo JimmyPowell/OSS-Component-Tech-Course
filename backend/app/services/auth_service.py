@@ -91,11 +91,20 @@ def finalize_registration(db: Session, redis_client: Redis, user_create: schemas
 
 def authenticate_user(db: Session, identifier: str, password: str) -> Optional[models.User]:
     """
-    Authenticates a user by username or email.
+    Authenticates a user by username, email, or student ID.
+    Automatically detects identifier type based on format.
     """
-    user = crud.crud_user.get_user_by_username(db, username=identifier)
-    if not user:
+    user = None
+    
+    # 1. Email detection (contains @)
+    if '@' in identifier:
         user = crud.crud_user.get_user_by_email(db, email=identifier)
+    # 2. Student ID detection (pure digits)
+    elif identifier.isdigit():
+        user = crud.crud_user.get_user_by_student_id(db, student_id=identifier)
+    # 3. Username (other cases)
+    else:
+        user = crud.crud_user.get_user_by_username(db, username=identifier)
     
     if not user:
         return None # User not found

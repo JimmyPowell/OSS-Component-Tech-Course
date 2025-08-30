@@ -21,9 +21,9 @@ def get_homework_by_uuid(db: Session, *, uuid: str) -> Optional[Homework]:
     return db.query(Homework).filter(Homework.uuid == uuid, Homework.deleted_at.is_(None)).first()
 
 
-def get_homework_detail_by_uuid(db: Session, *, uuid: str) -> Optional[dict]:
+def get_homework_detail_by_uuid(db: Session, *, uuid: str, status_filter: str = None) -> Optional[dict]:
     """Get homework with publisher information by UUID"""
-    result = db.query(
+    query = db.query(
         Homework,
         User.username,
         User.avatar_url
@@ -32,7 +32,13 @@ def get_homework_detail_by_uuid(db: Session, *, uuid: str) -> Optional[dict]:
     ).filter(
         Homework.uuid == uuid,
         Homework.deleted_at.is_(None)
-    ).first()
+    )
+    
+    # 如果指定了状态过滤，则只返回指定状态的作业
+    if status_filter:
+        query = query.filter(Homework.status == status_filter)
+    
+    result = query.first()
     
     if not result:
         return None
@@ -48,6 +54,7 @@ def get_homework_detail_by_uuid(db: Session, *, uuid: str) -> Optional[dict]:
         "cover_url": homework.cover_url,
         "resource_urls": homework.resource_urls,
         "lasting_time": homework.lasting_time,
+        "status": homework.status,
         "creator_id": homework.creator_id,
         "publisher_name": publisher_name,
         "publisher_avatar": publisher_avatar,
@@ -69,7 +76,8 @@ def get_multi(
     limit: int = 10,
     name: Optional[str] = None,
     start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None,
+    status: Optional[str] = None
 ) -> Tuple[int, list[Homework]]:
     query = db.query(Homework).filter(Homework.deleted_at.is_(None))
 
@@ -80,6 +88,8 @@ def get_multi(
         filters.append(Homework.created_at >= start_time)
     if end_time:
         filters.append(Homework.created_at <= end_time)
+    if status:
+        filters.append(Homework.status == status)
 
     if filters:
         query = query.filter(and_(*filters))

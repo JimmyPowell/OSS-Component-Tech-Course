@@ -26,7 +26,8 @@ const editForm = reactive({
   content: '',
   cover_url: '',
   resource_urls: [],
-  lasting_time: null
+  lasting_time: null,
+  status: 'draft'
 });
 
 // 添加作业抽屉
@@ -37,7 +38,8 @@ const addHomeworkForm = reactive({
   content: '',
   cover_url: '',
   resource_urls: [],
-  lasting_time: null
+  lasting_time: null,
+  status: 'draft'
 });
 
 // 文件上传相关
@@ -71,6 +73,7 @@ const availableColumns = [
   { key: 'name', title: '作业名称', visible: true },
   { key: 'uuid', title: '作业编号', visible: false },
   { key: 'description', title: '作业描述', visible: true },
+  { key: 'status', title: '状态', visible: true },
   { key: 'lasting_time', title: '时长限制', visible: true },
   { key: 'creator_id', title: '发布者ID', visible: false },
   { key: 'created_at', title: '发布时间', visible: true },
@@ -80,6 +83,12 @@ const columnSettings = reactive([...availableColumns]);
 
 // 表格高度自适应
 const tableHeight = ref(600);
+
+// 状态选项
+const statusOptions = [
+  { label: '未发布', value: 'draft' },
+  { label: '已发布', value: 'published' }
+];
 
 const API_BASE_URL = 'http://localhost:8000/api/v1/admin/homeworks';
 
@@ -121,7 +130,8 @@ const addNewHomework = () => {
     content: '',
     cover_url: '',
     resource_urls: [],
-    lasting_time: null
+    lasting_time: null,
+    status: 'draft'
   });
   fileList.value = [];
   uploadProgress.value = 0;
@@ -184,23 +194,35 @@ const handleRemoveFile = (file) => {
 // 获取七牛云上传token和配置信息
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
+    console.log('正在请求上传token:', { fileKey, purpose });
+    
     const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
       file_key: fileKey,
       purpose: purpose
     });
     
+    console.log('上传token响应:', response);
+    
     if (response.data.code === 201) {
       const data = response.data.data;
+      console.log('成功获取上传token:', data);
       return {
         token: data.token,
         upload_domain: data.upload_domain,
         download_domain: data.download_domain
       };
     } else {
+      console.error('上传token响应错误:', response.data);
       throw new Error(response.data.message || '获取上传token失败');
     }
   } catch (error) {
-    console.error('获取上传token失败:', error);
+    console.error('获取上传token失败 - 详细错误信息:');
+    console.error('错误对象:', error);
+    console.error('错误消息:', error.message);
+    console.error('响应状态:', error.response?.status);
+    console.error('响应数据:', error.response?.data);
+    console.error('响应头:', error.response?.headers);
+    console.error('请求配置:', error.config);
     throw error;
   }
 };
@@ -534,6 +556,7 @@ const editHomework = async (uuid) => {
       editForm.cover_url = homework.cover_url || '';
       editForm.resource_urls = homework.resource_urls || [];
       editForm.lasting_time = homework.lasting_time;
+      editForm.status = homework.status || 'draft';
       
       // 重置编辑时的上传状态
       editFileList.value = [];
@@ -579,6 +602,37 @@ const handleEditSubmit = async () => {
       message.error('更新作业信息失败');
     }
   }
+};
+
+// 状态切换功能
+const toggleHomeworkStatus = async (uuid, currentStatus) => {
+  const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+  const statusText = newStatus === 'published' ? '发布' : '下架';
+  
+  Modal.confirm({
+    title: `确认${statusText}作业`,
+    content: `确定要${statusText}这个作业吗？`,
+    onOk: async () => {
+      try {
+        const response = await request.put(`${API_BASE_URL}/${uuid}/status`, {
+          status: newStatus
+        });
+        
+        if (response.data.code === 200) {
+          message.success(response.data.message || `作业已${statusText}`);
+          refreshList();
+        } else {
+          message.error(response.data.message || `${statusText}失败`);
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${statusText}作业失败`);
+        }
+      }
+    }
+  });
 };
 
 const deleteHomework = (uuid) => {
@@ -763,6 +817,11 @@ onUnmounted(() => {
               </div>
             </div>
           </template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="record.status === 'published' ? 'green' : 'orange'">
+              {{ statusOptions.find(s => s.value === record.status)?.label || record.status }}
+            </a-tag>
+          </template>
           <template v-else-if="column.key === 'lasting_time'">
             {{ formatDuration(record.lasting_time) }}
           </template>
@@ -781,11 +840,19 @@ onUnmounted(() => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="250" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewHomework(record.uuid)">查看</a-button>
             <a-button size="small" type="primary" @click="editHomework(record.uuid)">编辑</a-button>
+            <a-button 
+              size="small" 
+              :type="record.status === 'published' ? 'default' : 'primary'"
+              @click="toggleHomeworkStatus(record.uuid, record.status)"
+              style="margin-right: 4px;"
+            >
+              {{ record.status === 'published' ? '下架' : '发布' }}
+            </a-button>
             <a-button size="small" danger @click="deleteHomework(record.uuid)">删除</a-button>
           </div>
         </template>
@@ -853,6 +920,13 @@ onUnmounted(() => {
         </a-form-item>
         <a-form-item label="时长限制（分钟）">
           <a-input-number v-model:value="editForm.lasting_time" placeholder="请输入作业时长限制" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-select v-model:value="editForm.status" placeholder="请选择作业状态">
+            <a-select-option v-for="option in statusOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </a-select-option>
+          </a-select>
         </a-form-item>
       </a-form>
       
@@ -937,6 +1011,13 @@ onUnmounted(() => {
         </a-form-item>
         <a-form-item label="时长限制（分钟）">
           <a-input-number v-model:value="addHomeworkForm.lasting_time" placeholder="请输入作业时长限制" style="width: 100%" />
+        </a-form-item>
+        <a-form-item label="状态">
+          <a-select v-model:value="addHomeworkForm.status" placeholder="请选择作业状态">
+            <a-select-option v-for="option in statusOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </a-select-option>
+          </a-select>
         </a-form-item>
       </a-form>
       
@@ -1146,6 +1227,12 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* 统一表格样式 */

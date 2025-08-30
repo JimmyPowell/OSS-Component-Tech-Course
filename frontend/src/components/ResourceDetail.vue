@@ -112,6 +112,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { message } from 'ant-design-vue'
 import { getCourseResourceDetail, downloadResource, incrementViewCount } from '@/api/courseResource.js';
 
 const route = useRoute();
@@ -289,11 +290,11 @@ const handleDownload = async () => {
     if (result.success) {
       console.log('下载开始');
     } else {
-      alert(result.message || '下载失败，请稍后重试');
+      message.error(result.message || '下载失败，请稍后重试');
     }
   } catch (error) {
     console.error('下载失败:', error);
-    alert('下载失败，请稍后重试');
+    message.error('下载失败，请稍后重试');
   } finally {
     downloading.value = false;
   }

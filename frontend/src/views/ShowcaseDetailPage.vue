@@ -18,6 +18,14 @@
 
     <!-- Main Content -->
     <div v-else-if="showcase" class="container">
+      <!-- Back Button -->
+      <div class="back-nav">
+        <button class="back-btn" @click="goBack">
+          <i class="iconfont icon-arrow-left"></i>
+          返回
+        </button>
+      </div>
+      
       <!-- Breadcrumb Navigation -->
       <nav class="breadcrumb-nav" aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -51,10 +59,21 @@
                 <i class="iconfont" :class="isLiked ? 'icon-dianzan' : 'icon-dzs'"></i>
                 {{ likeCount }}
               </button>
+              <a v-if="showcase.project_url" :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="stat-badge project-link">
+                <i class="iconfont icon-link"></i>
+                项目链接
+              </a>
             </div>
           </div>
           
           <p class="showcase-summary" v-if="showcase.summary">{{ showcase.summary }}</p>
+          
+          <!-- Tags -->
+          <div v-if="showcase.tags && showcase.tags.length" class="tags-section">
+            <div class="tags-container">
+              <span v-for="tag in showcase.tags" :key="tag" class="tag">{{ tag }}</span>
+            </div>
+          </div>
           
           <!-- Author Info Card -->
           <div class="author-card">
@@ -65,13 +84,6 @@
                 <span class="publish-time">发布于 {{ formatDate(showcase.created_at) }}</span>
                 <span class="author-role" v-if="showcase.author?.role">{{ showcase.author.role === 'manager' ? '管理员' : '学生' }}</span>
               </div>
-            </div>
-            <!-- Project Link in Author Card -->
-            <div v-if="showcase.project_url" class="quick-actions">
-              <a :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="project-link-btn">
-                <i class="iconfont icon-link"></i>
-                项目链接
-              </a>
             </div>
           </div>
         </div>
@@ -84,31 +96,6 @@
           <div class="content-text" v-html="formatContent(showcase.detailed_introduction)"></div>
         </div>
 
-        <!-- Project URL Detail (if needed) -->
-        <div class="content-section" v-if="showcase.project_url && showcase.project_url.length > 50">
-          <h3>项目详细链接</h3>
-          <div class="project-link-detail">
-            <div class="link-preview">
-              <i class="iconfont icon-link"></i>
-              <div class="link-info">
-                <span class="link-title">完整链接地址</span>
-                <span class="link-url">{{ showcase.project_url }}</span>
-              </div>
-              <a :href="showcase.project_url" target="_blank" rel="noopener noreferrer" class="visit-btn">
-                <i class="iconfont icon-arrow-right"></i>
-                访问
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tags -->
-        <div class="content-section" v-if="showcase.tags && showcase.tags.length">
-          <h3>标签</h3>
-          <div class="tags-container">
-            <span v-for="tag in showcase.tags" :key="tag" class="tag">{{ tag }}</span>
-          </div>
-        </div>
       </div>
 
       <!-- Comments Section -->
@@ -121,6 +108,7 @@
                 class="custom-select"
                 @click="toggleDropdown"
                 :class="{ active: showDropdown }"
+                :title="`当前排序: ${getSortText(sortConfig)}`"
               >
                 <span class="selected-text">{{ getSortText(sortConfig) }}</span>
                 <i class="iconfont icon-down dropdown-icon" :class="{ rotated: showDropdown }"></i>
@@ -199,7 +187,8 @@
           </div>
           
           <div v-else>
-            <div v-for="comment in comments" :key="comment.uuid" class="comment-item">
+            <transition-group name="comment-item" tag="div">
+              <div v-for="comment in comments" :key="comment.uuid" class="comment-item" :class="{ 'new-comment': comment.isNew }">
               <div class="comment-header">
                 <img src="/images/avatat.png" alt="用户头像" class="comment-avatar">
                 <div class="comment-info">
@@ -248,7 +237,8 @@
 
               <!-- Replies -->
               <div v-if="comment.replies && comment.replies.length" class="replies-list">
-                <div v-for="reply in comment.replies" :key="reply.uuid" class="reply-item">
+                <transition-group name="reply-item" tag="div">
+                  <div v-for="reply in comment.replies" :key="reply.uuid" class="reply-item" :class="{ 'new-reply': reply.isNew }">
                   <div class="reply-header">
                     <img src="/images/avatat.png" alt="用户头像" class="reply-avatar">
                     <div class="reply-info">
@@ -260,10 +250,12 @@
                       {{ reply.likes_count || 0 }}
                     </button>
                   </div>
-                  <div class="reply-content">{{ reply.content }}</div>
-                </div>
+                    <div class="reply-content">{{ reply.content }}</div>
+                  </div>
+                </transition-group>
               </div>
             </div>
+            </transition-group>
 
             <!-- Load More Comments -->
             <div v-if="hasMoreComments" class="load-more-container">
@@ -281,6 +273,7 @@
 <script setup>
 import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import { showcaseAPI } from '@/api/showcase'
 import { useAuthStore } from '@/stores/auth'
 
@@ -302,7 +295,8 @@ const loadingComments = ref(false)
 const hasMoreComments = ref(false)
 const commentsPage = ref(1)
 const commentsLimit = ref(10)
-const sortConfig = ref('created_at_desc')
+// 从localStorage恢复用户的排序偏好，默认为最新评论在前
+const sortConfig = ref(localStorage.getItem('showcase_comment_sort') || 'created_at_desc')
 const showDropdown = ref(false)
 const sortDropdown = ref(null)
 
@@ -527,17 +521,68 @@ const submitComment = async () => {
     console.log('评论提交响应:', response)
     
     if (response.data && response.data.code === 200) {
+      message.success('评论发表成功！')
+      
+      // 创建新评论对象并添加到评论列表顶部，避免重新获取所有评论
+      const newCommentObj = {
+        uuid: Date.now().toString(), // 临时ID
+        content: newComment.value.trim(),
+        user: {
+          username: userStore.user?.username || '当前用户',
+          real_name: userStore.user?.real_name || '当前用户'
+        },
+        created_at: new Date().toISOString(),
+        likes_count: 0,
+        isLiked: false,
+        replies: [],
+        isNew: true // 标记为新评论
+      }
+      
+      // 将新评论添加到列表顶部
+      comments.value.unshift(newCommentObj)
+      totalComments.value += 1
+      
+      // 3秒后移除新评论的高亮状态
+      setTimeout(() => {
+        newCommentObj.isNew = false
+      }, 3000)
+      
+      // 清理表单
       newComment.value = ''
       showCommentForm.value = false
-      await fetchComments() // Refresh comments
     } else if (response.success) {
       // 兼容旧格式
+      message.success('评论发表成功！')
+      
+      // 同样的优化逻辑
+      const newCommentObj = {
+        uuid: Date.now().toString(),
+        content: newComment.value.trim(),
+        user: {
+          username: userStore.user?.username || '当前用户',
+          real_name: userStore.user?.real_name || '当前用户'
+        },
+        created_at: new Date().toISOString(),
+        likes_count: 0,
+        isLiked: false,
+        replies: [],
+        isNew: true // 标记为新评论
+      }
+      
+      comments.value.unshift(newCommentObj)
+      totalComments.value += 1
+      
+      // 3秒后移除新评论的高亮状态
+      setTimeout(() => {
+        newCommentObj.isNew = false
+      }, 3000)
+      
       newComment.value = ''
       showCommentForm.value = false
-      await fetchComments() // Refresh comments
     }
   } catch (err) {
     console.error('发布评论失败:', err)
+    message.error('发布评论失败，请稍后重试')
   } finally {
     submittingComment.value = false
   }
@@ -551,6 +596,8 @@ const toggleDropdown = () => {
 const selectSort = async (value) => {
   if (value !== sortConfig.value) {
     sortConfig.value = value
+    // 保存用户的排序偏好到localStorage
+    localStorage.setItem('showcase_comment_sort', value)
     showDropdown.value = false
     commentsPage.value = 1
     comments.value = []
@@ -619,13 +666,49 @@ const submitReply = async (comment) => {
       content: content
     })
     
-    if (response.success) {
+    console.log('回复提交响应:', response)
+    
+    // 支持两种API响应格式
+    if ((response.data && response.data.code === 200) || response.success) {
+      message.success('回复发表成功！')
+      
+      // 创建新回复对象并直接添加到评论的回复列表中
+      const newReply = {
+        uuid: Date.now().toString(), // 临时ID
+        content: content,
+        user: {
+          username: userStore.user?.username || '当前用户',
+          real_name: userStore.user?.real_name || '当前用户'
+        },
+        created_at: new Date().toISOString(),
+        likes_count: 0,
+        isLiked: false,
+        isNew: true // 标记为新回复
+      }
+      
+      // 确保评论有replies数组
+      if (!comment.replies) {
+        comment.replies = []
+      }
+      
+      // 将新回复添加到评论的回复列表末尾（按时间顺序）
+      comment.replies.push(newReply)
+      
+      // 3秒后移除新回复的高亮状态
+      setTimeout(() => {
+        newReply.isNew = false
+      }, 3000)
+      
+      // 清理表单
       replyContent.value[comment.uuid] = ''
       activeReplyForm.value = null
-      await fetchComments() // Refresh comments to show new reply
+    } else {
+      console.error('回复提交失败 - API响应格式错误:', response)
+      message.error('回复发布失败，请稍后重试')
     }
   } catch (err) {
     console.error('发布回复失败:', err)
+    message.error('发布回复失败，请稍后重试')
   }
 }
 
@@ -657,6 +740,14 @@ const toggleReplyLike = async (reply) => {
 
 const loadMoreComments = () => {
   fetchComments(commentsPage.value + 1, true)
+}
+
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.go(-1)
+  } else {
+    router.push('/showcase')
+  }
 }
 
 const formatDate = (dateString) => {
@@ -703,6 +794,45 @@ onUnmounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+/* 返回按钮样式 */
+.back-nav {
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.95);
+  color: #2d3748;
+  transform: translateX(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: #cbd5e0;
+}
+
+.back-btn i {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.back-btn:hover i {
+  transform: translateX(-2px);
 }
 .loading-container {
   display: flex;
@@ -902,6 +1032,21 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
 }
 
+.stat-badge.project-link {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  color: white;
+  text-decoration: none;
+  border: 1px solid #4299e1;
+}
+
+.stat-badge.project-link:hover {
+  background: linear-gradient(135deg, #3182ce, #2c5aa0);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+}
+
 .showcase-summary {
   font-size: 18px;
   color: #4a5568;
@@ -970,104 +1115,35 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
 }
 
-.quick-actions {
-  margin-left: auto;
+.tags-section {
+  margin-bottom: 28px;
+}
+
+.tags-container {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
-.project-link-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+.tag {
+  background: linear-gradient(135deg, #f7fafc, #edf2f7);
+  color: #4a5568;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tag:hover {
   background: linear-gradient(135deg, #4299e1, #3182ce);
   color: white;
-  text-decoration: none;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
+  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
 }
 
-.project-link-btn:hover {
-  background: linear-gradient(135deg, #3182ce, #2c5aa0);
-  color: white;
-  text-decoration: none;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(66, 153, 225, 0.4);
-}
-
-.project-link-btn i {
-  font-size: 16px;
-}
-
-.project-link-detail {
-  background: linear-gradient(135deg, #f0f8ff, #e8f4fd);
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #b8daff;
-}
-
-.link-preview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.link-preview > i {
-  font-size: 24px;
-  color: #4299e1;
-  flex-shrink: 0;
-}
-
-.link-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.link-title {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 16px;
-}
-
-.link-url {
-  color: #4a5568;
-  font-size: 14px;
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.visit-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #4299e1, #3182ce);
-  color: white;
-  text-decoration: none;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.visit-btn:hover {
-  background: linear-gradient(135deg, #3182ce, #2c5aa0);
-  color: white;
-  text-decoration: none;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
-}
-
-.visit-btn i {
-  font-size: 14px;
-}
 
 .showcase-content {
   margin-bottom: 40px;
@@ -1116,32 +1192,6 @@ onUnmounted(() => {
   margin-bottom: 0;
 }
 
-/* Removed separate project-link styles as they are now integrated into author card */
-
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.tag {
-  background: linear-gradient(135deg, #f7fafc, #edf2f7);
-  color: #4a5568;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.tag:hover {
-  background: linear-gradient(135deg, #4299e1, #3182ce);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
-}
 
 .comments-section {
   background: #fff;
@@ -1150,6 +1200,7 @@ onUnmounted(() => {
   padding: 32px;
   margin-bottom: 40px;
   border: 1px solid #f0f4f8;
+  min-height: 200px; /* 确保评论区有最小高度，避免页面跳动 */
 }
 
 .comments-section h3 {
@@ -1310,7 +1361,8 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   justify-content: center;
-  padding: 20px;
+  padding: 40px 20px;
+  min-height: 120px; /* 防止页面高度跳动 */
 }
 
 .no-comments {
@@ -1328,7 +1380,9 @@ onUnmounted(() => {
 .comment-item {
   padding: 20px 0;
   border-bottom: 1px solid #e2e8f0;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .comment-item:hover {
@@ -1336,6 +1390,75 @@ onUnmounted(() => {
   border-radius: 12px;
   margin: 0 -16px;
   padding: 20px 16px;
+}
+
+/* 新评论的进入动画 */
+.comment-item-enter-active {
+  transition: all 0.6s ease;
+}
+
+.comment-item-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.comment-item-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 新回复的进入动画 */
+.reply-item-enter-active {
+  transition: all 0.5s ease;
+}
+
+.reply-item-enter-from {
+  opacity: 0;
+  transform: translateX(-10px) scale(0.95);
+}
+
+.reply-item-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+/* 新添加的评论高亮效果 */
+.comment-item.new-comment {
+  background: linear-gradient(135deg, #e6fffa, #f0fff4);
+  border-left: 3px solid #38b2ac;
+  animation: highlightFade 3s ease-out forwards;
+}
+
+@keyframes highlightFade {
+  0% {
+    background: linear-gradient(135deg, #e6fffa, #f0fff4);
+    border-left-color: #38b2ac;
+  }
+  100% {
+    background: transparent;
+    border-left-color: transparent;
+  }
+}
+
+/* 新添加的回复高亮效果 */
+.reply-item.new-reply {
+  background: linear-gradient(135deg, #e6fffa, #f0fff4);
+  border-left: 3px solid #38b2ac;
+  border-radius: 8px;
+  animation: highlightFadeReply 3s ease-out forwards;
+  margin: 0 -8px;
+  padding: 8px;
+}
+
+@keyframes highlightFadeReply {
+  0% {
+    background: linear-gradient(135deg, #e6fffa, #f0fff4);
+    border-left-color: #38b2ac;
+  }
+  100% {
+    background: transparent;
+    border-left-color: transparent;
+  }
 }
 
 .comment-item:last-child {

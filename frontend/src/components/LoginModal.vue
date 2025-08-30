@@ -37,7 +37,7 @@
             />
             <form @submit.prevent="handleLogin">
               <div class="form-group">
-                <label for="username" class="form-label">邮箱/用户名</label>
+                <label for="username" class="form-label">邮箱/用户名/学号</label>
                 <div class="input-wrapper">
                   <span class="input-icon">
                     <i class="iconfont icon-email"></i>
@@ -47,7 +47,7 @@
                     v-model="loginForm.identifier"
                     type="text"
                     class="form-input"
-                    placeholder="请输入您的邮箱或用户名"
+                    placeholder="请输入您的邮箱、用户名或学号"
                     required
                   />
                 </div>
@@ -86,7 +86,7 @@
                 <a href="#" class="forgot-password">忘记密码？</a>
               </div>
               
-              <button type="submit" class="btn-login" :disabled="isLoading">
+              <button type="button" class="btn-login" :disabled="isLoading" @click="handleLogin">
                 <span v-if="isLoading" class="loading-spinner"></span>
                 {{ isLoading ? '登录中...' : '登录' }}
               </button>
@@ -182,6 +182,9 @@ const switchToRegister = () => {
 }
 
 const handleLogin = async () => {
+  console.log('handleLogin 函数被调用') // 调试信息
+  console.log('登录表单数据:', loginForm) // 调试信息
+  
   isLoading.value = true
   errorMessage.value = ''
   
@@ -189,9 +192,11 @@ const handleLogin = async () => {
     // 调用Pinia store中的登录方法
     const result = await authStore.login(loginForm.identifier, loginForm.password)
     
-    if (result.success) {
+    console.log('Login result:', result) // 调试信息
+    
+    if (result && result.success) {
       // 登录成功显示通知
-      successNotification.value.show()
+      successNotification.value?.show()
       
       // 如果记住登录状态，可以设置本地存储标记
       if (loginForm.remember) {
@@ -214,23 +219,33 @@ const handleLogin = async () => {
       }, 1200)
     } else {
       // 登录失败显示错误通知
-      errorMessage.value = result.message
-      errorNotification.value.show()
+      console.log('Login failed, showing error') // 调试信息
+      errorMessage.value = (result && result.message) || '登录失败，请检查用户名和密码'
+      console.log('Error message:', errorMessage.value) // 调试信息
+      console.log('Error notification ref:', errorNotification.value) // 调试信息
+      
+      if (errorNotification.value) {
+        errorNotification.value.show()
+      } else {
+        console.error('Error notification component is not available')
+      }
       
       // 登录失败处理（如清空密码字段）
       loginForm.password = ''
       
       // 如果出现401错误（用户名/密码错误），聚焦用户名字段
-      if (result.originalError?.response?.status === 401) {
+      if (result && result.originalError?.response?.status === 401) {
         setTimeout(() => {
-          document.getElementById('username').focus()
+          document.getElementById('username')?.focus()
         }, 100)
       }
     }
   } catch (error) {
-    console.error('登录失败:', error)
+    console.error('登录异常:', error)
     errorMessage.value = '登录过程中发生错误，请稍后重试'
-    errorNotification.value.show()
+    if (errorNotification.value) {
+      errorNotification.value.show()
+    }
     loginForm.password = '' // 清空密码字段
   } finally {
     isLoading.value = false

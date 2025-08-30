@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from datetime import datetime
 import uuid
 
-from app.models.announcement import Announcement
+from app.models.announcement import Announcement, AnnouncementStatus
 from app.schemas.announcement import AnnouncementCreate, AnnouncementUpdate
 
 
@@ -30,6 +30,7 @@ def get_multi(
     skip: int = 0,
     limit: int = 10,
     name: Optional[str] = None,
+    status: Optional[str] = None,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None
 ) -> Tuple[int, list[Announcement]]:
@@ -38,6 +39,8 @@ def get_multi(
     filters = []
     if name:
         filters.append(Announcement.name.ilike(f"%{name}%"))
+    if status:
+        filters.append(Announcement.status == status)
     if start_time:
         filters.append(Announcement.created_at >= start_time)
     if end_time:
@@ -69,3 +72,33 @@ def remove_announcement(db: Session, *, db_obj: Announcement) -> Announcement:
     db.commit()
     db.refresh(db_obj)
     return db_obj
+
+
+def update_status(db: Session, *, db_obj: Announcement, status: str) -> Announcement:
+    """Update announcement status"""
+    db_obj.status = status
+    db.add(db_obj)
+    db.commit()
+    db.refresh(db_obj)
+    return db_obj
+
+
+def get_published(
+    db: Session,
+    *,
+    skip: int = 0,
+    limit: int = 10,
+    name: Optional[str] = None,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None
+) -> Tuple[int, list[Announcement]]:
+    """Get only published announcements for frontend display"""
+    return get_multi(
+        db,
+        skip=skip,
+        limit=limit,
+        name=name,
+        status=AnnouncementStatus.published.value,
+        start_time=start_time,
+        end_time=end_time
+    )

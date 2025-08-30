@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch, onUnmounted } from 'vue';
-import { SearchOutlined, PlusOutlined, SettingOutlined } from '@ant-design/icons-vue';
+import { SearchOutlined, PlusOutlined, SettingOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons-vue';
 import { message, Modal } from 'ant-design-vue';
 import request from '../utils/request';
 import axios from 'axios';
@@ -48,6 +48,17 @@ const userDetail = ref(null);
 
 // 列设置
 const columnSettingsVisible = ref(false);
+
+// 批量导入
+const batchImportVisible = ref(false);
+const batchImportStep = ref(1); // 1: 文件上传, 2: 冲突解决, 3: 导入结果
+const uploadFile = ref(null);
+const uploadLoading = ref(false);
+const importPreviewData = ref(null);
+const conflictResolution = ref('cancel');
+const importResult = ref(null);
+const fileInput = ref(null);
+const fileList = ref([]);
 const availableColumns = [
   { key: 'username', title: '用户名', visible: true },
   { key: 'real_name', title: '真实姓名', visible: true },
@@ -125,6 +136,108 @@ const refreshList = () => {
 
 const configSettings = () => {
   columnSettingsVisible.value = true;
+};
+
+// 批量导入相关方法
+const openBatchImport = () => {
+  batchImportVisible.value = true;
+  batchImportStep.value = 1;
+  uploadFile.value = null;
+  fileList.value = [];
+  importPreviewData.value = null;
+  conflictResolution.value = 'cancel';
+  importResult.value = null;
+};
+
+const downloadTemplate = () => {
+  const templateUrl = 'https://oss.fossradar.cn/student_data_import_template.xlsx%20.xlsx';
+  window.open(templateUrl, '_blank');
+};
+
+const handleFileUpload = (file) => {
+  uploadFile.value = file;
+  fileList.value = [{
+    uid: file.uid || Date.now().toString(),
+    name: file.name,
+    status: 'done',
+    originFileObj: file
+  }];
+  return false; // 阻止默认上传行为
+};
+
+const handleFileRemove = (file) => {
+  uploadFile.value = null;
+  fileList.value = [];
+  return true;
+};
+
+const previewImport = async () => {
+  if (!uploadFile.value) {
+    message.error('请先选择要上传的文件');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', uploadFile.value);
+
+  try {
+    uploadLoading.value = true;
+    
+    const response = await request.post('http://localhost:8000/api/v1/batch-import/preview', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    if (response.data.code === 200) {
+      importPreviewData.value = response.data.data;
+      
+      if (importPreviewData.value.conflicts.length > 0) {
+        batchImportStep.value = 2; // 有冲突，进入冲突解决步骤
+      } else {
+        // 没有冲突，直接可以导入
+        executeImport();
+      }
+    } else {
+      message.error(response.data.message || '预览失败');
+    }
+  } catch (error) {
+    message.error('预览失败：' + (error.response?.data?.message || error.message));
+  } finally {
+    uploadLoading.value = false;
+  }
+};
+
+const executeImport = async () => {
+  try {
+    uploadLoading.value = true;
+    
+    const requestData = {
+      users: importPreviewData.value.valid_users,
+      conflict_resolution: conflictResolution.value
+    };
+
+    const response = await request.post('http://localhost:8000/api/v1/batch-import/execute', requestData);
+
+    if (response.data.code === 200 || response.data.code === 201) {
+      importResult.value = response.data.data;
+      batchImportStep.value = 3; // 显示导入结果
+      message.success(`成功导入 ${importResult.value.success_count} 个用户`);
+      
+      // 刷新用户列表
+      refreshList();
+    } else {
+      message.error(response.data.message || '导入失败');
+    }
+  } catch (error) {
+    message.error('导入失败：' + (error.response?.data?.message || error.message));
+  } finally {
+    uploadLoading.value = false;
+  }
+};
+
+const closeBatchImport = () => {
+  batchImportVisible.value = false;
 };
 
 const searchUser = () => {
@@ -215,16 +328,34 @@ const blockUser = (userId) => {
     onOk: async () => {
       try {
         const endpoint = user.is_active ? 'ban' : 'unban';
+        console.log(`正在${action}用户 ${userId}，调用端点: ${API_BASE_URL}/${userId}/${endpoint}`);
+        
         const response = await request.post(`${API_BASE_URL}/${userId}/${endpoint}`, {});
+        
+        console.log(`${action}用户响应:`, response);
         
         if (response.data.code === 200) {
           message.success(`用户${action}成功`);
-          refreshList();
+          
+          // 立即更新本地用户状态，而不是等待刷新
+          const userIndex = users.value.findIndex(u => u.id === userId);
+          if (userIndex !== -1) {
+            users.value[userIndex].is_active = !user.is_active;
+          }
+          
+          // 然后刷新列表以确保数据同步
+          await refreshList();
         } else {
+          console.error(`${action}失败:`, response.data);
           message.error(response.data.message || `${action}失败`);
         }
       } catch (error) {
-        message.error(`${action}用户失败`);
+        console.error(`${action}用户出错:`, error);
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${action}用户失败: ${error.message || '未知错误'}`);
+        }
       }
     }
   });
@@ -377,6 +508,10 @@ onUnmounted(() => {
         <a-button class="settings-btn" @click="configSettings">
           <template #icon><SettingOutlined /></template>
           列设置
+        </a-button>
+        <a-button class="batch-import-btn" @click="openBatchImport">
+          <template #icon><UploadOutlined /></template>
+          批量导入
         </a-button>
       </div>
       
@@ -646,6 +781,144 @@ onUnmounted(() => {
         </a-button>
       </template>
     </a-modal>
+
+    <!-- 批量导入Modal -->
+    <a-modal
+      v-model:open="batchImportVisible"
+      :title="batchImportStep === 1 ? '批量导入用户' : batchImportStep === 2 ? '冲突解决' : '导入结果'"
+      width="480"
+      :footer="false"
+      centered
+      @cancel="closeBatchImport"
+    >
+      <!-- 步骤1：文件上传 -->
+      <div v-if="batchImportStep === 1" class="batch-import-upload">
+        <div class="upload-header">
+          <h3>上传Excel文件</h3>
+          <p>请按照模板格式准备数据，包含学号、姓名、班级三列</p>
+          <a-button type="link" @click="downloadTemplate">
+            <template #icon><DownloadOutlined /></template>
+            下载模板
+          </a-button>
+        </div>
+        
+        <a-upload-dragger
+          v-model:file-list="fileList"
+          :before-upload="handleFileUpload"
+          @remove="handleFileRemove"
+          accept=".xlsx,.xls"
+          :multiple="false"
+          :show-upload-list="true"
+        >
+          <p class="ant-upload-drag-icon">
+            <UploadOutlined />
+          </p>
+          <p class="ant-upload-text">点击或拖拽文件到此区域上传</p>
+          <p class="ant-upload-hint">支持扩展名：.xlsx .xls</p>
+        </a-upload-dragger>
+        
+        <div class="upload-actions">
+          <a-button @click="closeBatchImport">取消</a-button>
+          <a-button 
+            type="primary" 
+            @click="previewImport" 
+            :loading="uploadLoading"
+            :disabled="!uploadFile"
+          >
+            下一步
+          </a-button>
+        </div>
+      </div>
+
+      <!-- 步骤2：冲突解决 -->
+      <div v-if="batchImportStep === 2" class="batch-import-conflicts">
+        <div class="conflict-summary">
+          <a-alert
+            :message="`发现 ${importPreviewData.conflicts.length} 个冲突需要解决`"
+            type="warning"
+            show-icon
+          />
+        </div>
+        
+        <div class="conflict-resolution-options">
+          <h4>冲突解决策略：</h4>
+          <a-radio-group v-model:value="conflictResolution">
+            <a-radio value="cancel">取消导入，不处理冲突数据</a-radio>
+            <a-radio value="overwrite">覆盖现有用户数据</a-radio>
+            <a-radio value="modify">跳过冲突，仅导入无冲突数据</a-radio>
+          </a-radio-group>
+        </div>
+        
+        <div class="conflict-list">
+          <h4>冲突详情：</h4>
+          <a-table
+            :dataSource="importPreviewData.conflicts"
+            :pagination="false"
+            size="small"
+            :scroll="{ y: 300 }"
+          >
+            <a-table-column key="row_index" title="行号" dataIndex="row_index" width="80">
+              <template #default="{ text }">{{ text + 1 }}</template>
+            </a-table-column>
+            <a-table-column key="student_id" title="学号" dataIndex="student_id" />
+            <a-table-column key="real_name" title="姓名" dataIndex="real_name" />
+            <a-table-column key="student_class" title="班级" dataIndex="student_class" />
+            <a-table-column key="conflict_type" title="冲突类型" dataIndex="conflict_type">
+              <template #default="{ text }">
+                <a-tag :color="text === 'student_id' ? 'red' : 'orange'">
+                  {{ text === 'student_id' ? '学号重复' : '用户名重复' }}
+                </a-tag>
+              </template>
+            </a-table-column>
+            <a-table-column key="existing_user" title="现有用户">
+              <template #default="{ record }">
+                <div v-if="record.existing_user">
+                  {{ record.existing_user.real_name }} ({{ record.existing_user.username }})
+                </div>
+              </template>
+            </a-table-column>
+          </a-table>
+        </div>
+        
+        <div class="conflict-actions">
+          <a-button @click="batchImportStep = 1">上一步</a-button>
+          <a-button @click="closeBatchImport">取消</a-button>
+          <a-button 
+            type="primary" 
+            @click="executeImport"
+            :loading="uploadLoading"
+          >
+            执行导入
+          </a-button>
+        </div>
+      </div>
+
+      <!-- 步骤3：导入结果 -->
+      <div v-if="batchImportStep === 3" class="batch-import-result">
+        <div class="result-summary">
+          <a-result
+            :status="importResult.error_count > 0 ? 'warning' : 'success'"
+            :title="`导入完成`"
+            :sub-title="`成功导入 ${importResult.success_count} 个用户，失败 ${importResult.error_count} 个`"
+          />
+        </div>
+        
+        <div v-if="importResult.errors.length > 0" class="error-details">
+          <h4>错误详情：</h4>
+          <a-list size="small" :dataSource="importResult.errors">
+            <template #renderItem="{ item }">
+              <a-list-item>
+                <a-typography-text type="danger">{{ item }}</a-typography-text>
+              </a-list-item>
+            </template>
+          </a-list>
+        </div>
+        
+        <div class="result-actions">
+          <a-button type="primary" @click="closeBatchImport">完成</a-button>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -792,5 +1065,173 @@ onUnmounted(() => {
   font-size: 11px;
   font-weight: 500;
   color: #bfbfbf;
+}
+
+/* 批量导入样式 */
+.batch-import-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  border-radius: 6px;
+}
+
+.batch-import-btn:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  color: white;
+}
+
+.batch-import-upload {
+  text-align: center;
+  padding: 8px;
+}
+
+.upload-header {
+  margin-bottom: 16px;
+}
+
+.upload-header h3 {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.upload-header p {
+  color: #666;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.upload-actions {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.upload-actions .ant-btn {
+  margin-left: 8px;
+}
+
+.batch-import-conflicts {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.conflict-summary {
+  margin-bottom: 16px;
+}
+
+.conflict-resolution-options {
+  margin-bottom: 24px;
+}
+
+.conflict-resolution-options h4 {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conflict-list {
+  margin-bottom: 24px;
+}
+
+.conflict-list h4 {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.conflict-actions {
+  text-align: right;
+}
+
+.conflict-actions .ant-btn {
+  margin-left: 8px;
+}
+
+.batch-import-result .result-summary {
+  margin-bottom: 24px;
+}
+
+.error-details {
+  margin-bottom: 24px;
+}
+
+.error-details h4 {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.result-actions {
+  text-align: right;
+}
+
+/* 自定义上传区域样式 */
+.custom-upload-area {
+  border: 2px dashed #d9d9d9;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.3s;
+  margin: 16px 0;
+}
+
+.custom-upload-area:hover {
+  border-color: #1890ff;
+}
+
+.upload-placeholder .ant-upload-drag-icon {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+}
+
+.upload-placeholder .ant-upload-text {
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.upload-placeholder .ant-upload-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+}
+
+.upload-file-info {
+  padding: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.file-name {
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  color: #ff4d4f;
 }
 </style>

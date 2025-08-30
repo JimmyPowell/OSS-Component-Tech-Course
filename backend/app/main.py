@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like, notification, blog
+from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like, notification, blog, batch_import
 
 app = FastAPI(title="FastAPI Project Template")
 
@@ -25,6 +25,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(user_management.router, prefix="/users", tags=["User Management"])
 api_router.include_router(course_resource.router, prefix="/course-resources", tags=["Course Resources"])
+api_router.include_router(course_resource.admin_router, prefix="/admin/course-resources", tags=["Admin Course Resources"])
 api_router.include_router(homework.router, prefix="/homeworks", tags=["Homeworks"])
 api_router.include_router(homework.admin_router, prefix="/admin/homeworks", tags=["Admin Homeworks"])
 api_router.include_router(showcase.router, prefix="/showcases", tags=["Showcases"])
@@ -44,6 +45,7 @@ api_router.include_router(like.router, prefix="/likes", tags=["Likes"])
 api_router.include_router(notification.router, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(notification.admin_router, prefix="/admin/notifications", tags=["Admin Notifications"])
 api_router.include_router(blog.router, prefix="/blogs", tags=["Blogs"])
+api_router.include_router(batch_import.router, prefix="/batch-import", tags=["Batch Import"])
 
 app.include_router(api_router)
 

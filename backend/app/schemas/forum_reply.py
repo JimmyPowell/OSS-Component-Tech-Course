@@ -35,6 +35,7 @@ class ForumReplyInDB(ForumReplyBase):
 
 
 class ForumReplyResponse(BaseModel):
+    id: int
     uuid: str
     content: str
     post_id: int

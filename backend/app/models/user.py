@@ -14,6 +14,8 @@ class User(Base):
     real_name = Column(String(50), nullable=True)
     phone_number = Column(String(20), nullable=True)
     school = Column(String(100), nullable=True)
+    student_id = Column(String(50), nullable=True, index=True)  # 学号
+    student_class = Column(String(100), nullable=True)         # 班级
     avatar_url = Column(String(255), nullable=True)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)

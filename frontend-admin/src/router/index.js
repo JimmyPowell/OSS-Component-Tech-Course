@@ -9,6 +9,8 @@ import HomeworkManagement from '../components/HomeworkManagement.vue';
 import ShowcaseManagement from '../components/ShowcaseManagement.vue';
 import ShowcaseReview from '../components/ShowcaseReview.vue';
 import ForumManagement from '../components/ForumManagement.vue';
+import ForumPostManagement from '../components/ForumPostManagement.vue';
+import ShowcaseDiscussionManagement from '../components/ShowcaseDiscussionManagement.vue';
 import AnnouncementManagement from '../components/AnnouncementManagement.vue';
 import SystemSettings from '../components/SystemSettings.vue';
 import VideoPreview from '../components/VideoPreview.vue';
@@ -25,7 +27,9 @@ const routes = [
   { path: '/homework', component: HomeworkManagement, meta: { requiresAuth: true } },
   { path: '/showcase', component: ShowcaseManagement, meta: { requiresAuth: true } },
   { path: '/showcase-review', component: ShowcaseReview, meta: { requiresAuth: true } },
+  { path: '/showcase-discussions', component: ShowcaseDiscussionManagement, meta: { requiresAuth: true } },
   { path: '/forum', component: ForumManagement, meta: { requiresAuth: true } },
+  { path: '/forum-posts', component: ForumPostManagement, meta: { requiresAuth: true } },
   { path: '/announcements', component: AnnouncementManagement, meta: { requiresAuth: true } },
   { path: '/blogs', component: BlogManagement, meta: { requiresAuth: true } },
   { path: '/settings', component: SystemSettings, meta: { requiresAuth: true } },

@@ -69,9 +69,7 @@
                 <div class="role-info">{{ userRoleDisplay }}</div>
               </div>
               <div class="user-menu-item" @click="goToProfile">个人资料</div>
-              <div class="user-menu-item" @click="goToMyHomework">我的作业</div>
-              <div class="user-menu-item" @click="goToMyShowcase">我的作品</div>
-              <div class="user-menu-item" @click="goToSettings">设置</div>
+              <div class="user-menu-item" @click="goToMyProjects">我的项目</div>
               <div class="user-menu-divider"></div>
               <div class="user-menu-item logout" @click="handleLogout">退出登录</div>
             </div>
@@ -93,19 +91,29 @@
       v-model="showRegisterModal" 
       @switch-to-login="switchToLogin"
     />
+    
+    <!-- 通知组件 -->
+    <Notification
+      ref="infoNotification"
+      :message="infoMessage"
+      type="info"
+      :duration="3000"
+    />
   </nav>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { BellOutlined } from '@ant-design/icons-vue';
 import { notificationApi } from '../api/notification';
 import LoginModal from './LoginModal.vue';
 import RegisterModal from './RegisterModal.vue';
+import Notification from './Notification.vue';
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const isScrolled = ref(false);
 const showLoginModal = ref(false);
@@ -116,6 +124,10 @@ const showUserMenu = ref(false);
 const showNotificationMenu = ref(false);
 const notifications = ref([]);
 const unreadCount = ref(0);
+
+// 提示通知相关
+const infoNotification = ref(null);
+const infoMessage = ref('');
 
 // 获取用户登录状态和信息
 const isUserLoggedIn = computed(() => authStore.isAuthenticated)
@@ -188,29 +200,17 @@ const handleLogout = async () => {
 // 导航到个人资料页面
 const goToProfile = () => {
   showUserMenu.value = false;
-  // TODO: 实现个人资料页面
-  console.log('导航到个人资料页面');
+  router.push('/profile');
 };
 
-// 导航到我的作业页面
-const goToMyHomework = () => {
+// 导航到我的项目页面
+const goToMyProjects = () => {
   showUserMenu.value = false;
-  // TODO: 实现我的作业页面或在作业页面筛选用户作业
-  console.log('导航到我的作业页面');
-};
-
-// 导航到我的作品页面
-const goToMyShowcase = () => {
-  showUserMenu.value = false;
-  // TODO: 实现我的作品页面或在作品展示页面筛选用户作品
-  console.log('导航到我的作品页面');
-};
-
-// 导航到设置页面
-const goToSettings = () => {
-  showUserMenu.value = false;
-  // TODO: 实现设置页面
-  console.log('导航到设置页面');
+  // 显示即将上线提示
+  infoMessage.value = '功能即将上线，敬请期待！';
+  if (infoNotification.value) {
+    infoNotification.value.show();
+  }
 };
 
 // 通知相关函数

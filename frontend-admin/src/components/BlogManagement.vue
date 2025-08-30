@@ -54,6 +54,7 @@ const newTagName = ref('');
 const columnSettingsVisible = ref(false);
 const availableColumns = [
   { key: 'title', title: '标题', visible: true },
+  { key: 'summary', title: '摘要', visible: false },
   { key: 'author', title: '作者', visible: true },
   { key: 'status', title: '状态', visible: true },
   { key: 'tags', title: '标签', visible: true },
@@ -99,13 +100,14 @@ const fetchBlogs = async (page = 1, pageSize = 20) => {
       });
     }
 
-    const response = await request.get(`${API_BASE_URL}/search?${params.toString()}`);
+    const response = await request.get(`${API_BASE_URL}/admin/search?${params.toString()}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
       blogs.value = data.items || [];
       pagination.total = data.total || 0;
       pagination.current = page;
+      console.log('博客列表数据:', data.items); // 调试日志
     } else {
       message.error(response.data.message || '获取博客列表失败');
     }
@@ -303,6 +305,39 @@ const createTag = async () => {
   }
 };
 
+// 切换博客状态
+const toggleBlogStatus = async (uuid, currentStatus) => {
+  const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+  const statusText = newStatus === 'published' ? '发布' : '下架';
+  
+  Modal.confirm({
+    title: `确认${statusText}博客`,
+    content: `确定要${statusText}这篇博客吗？`,
+    onOk: async () => {
+      try {
+        // 只发送状态更新数据，避免发送完整对象
+        const response = await request.put(`${API_BASE_URL}/${uuid}`, {
+          status: newStatus
+        });
+        
+        if (response.data.code === 200) {
+          message.success(`博客${statusText}成功`);
+          refreshList();
+        } else {
+          message.error(response.data.message || `${statusText}失败`);
+        }
+      } catch (error) {
+        console.error(`${statusText}博客失败:`, error);
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${statusText}博客失败`);
+        }
+      }
+    }
+  });
+};
+
 // 打开标签管理
 const openTagManagement = () => {
   tagModalVisible.value = true;
@@ -337,15 +372,30 @@ const visibleColumns = computed(() => {
   return columnSettings.filter(col => col.visible);
 });
 
+// 获取状态标签
+const getStatusLabel = (status) => {
+  const statusMap = {
+    draft: '未发布',
+    published: '已发布',
+    archived: '已归档'
+  };
+  return statusMap[status] || status;
+};
+
+// 获取状态颜色
+const getStatusColor = (status) => {
+  const colorMap = {
+    draft: 'orange',
+    published: 'green',
+    archived: 'gray'
+  };
+  return colorMap[status] || 'default';
+};
+
 // 格式化显示值
 const formatColumnValue = (record, column) => {
   if (column.key === 'status') {
-    const statusMap = {
-      draft: '草稿',
-      published: '已发布',
-      archived: '已归档'
-    };
-    return statusMap[record.status] || record.status;
+    return getStatusLabel(record.status);
   } else if (column.key === 'author') {
     return record.author?.real_name || record.author?.username || '未知';
   } else if (column.key === 'tags') {
@@ -468,12 +518,12 @@ onUnmounted(() => {
         :key="column.key" 
         :title="column.title" 
         :data-index="column.key"
-        :width="column.key === 'title' ? 200 : column.key === 'content' ? 300 : undefined"
+        :width="column.key === 'title' ? 300 : column.key === 'summary' ? 250 : column.key === 'content' ? 300 : undefined"
       >
         <template #default="{ record }">
           <template v-if="column.key === 'status'">
-            <a-tag :color="record.status === 'published' ? 'green' : record.status === 'draft' ? 'orange' : 'gray'">
-              {{ formatColumnValue(record, column) }}
+            <a-tag :color="getStatusColor(record.status)">
+              {{ getStatusLabel(record.status) }}
             </a-tag>
           </template>
           <template v-else-if="column.key === 'tags'">
@@ -486,9 +536,26 @@ onUnmounted(() => {
             <span v-else>无标签</span>
           </template>
           <template v-else-if="column.key === 'title'">
-            <div style="max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" :title="record.title">
-              {{ record.title }}
-            </div>
+            <a-tooltip 
+              :title="record.title" 
+              placement="topLeft"
+              :overlay-style="{ maxWidth: '400px', wordWrap: 'break-word' }"
+            >
+              <div class="title-cell">
+                {{ record.title }}
+              </div>
+            </a-tooltip>
+          </template>
+          <template v-else-if="column.key === 'summary'">
+            <a-tooltip 
+              :title="record.summary || '无摘要'" 
+              placement="topLeft"
+              :overlay-style="{ maxWidth: '350px', wordWrap: 'break-word' }"
+            >
+              <div class="summary-cell">
+                {{ record.summary || '无摘要' }}
+              </div>
+            </a-tooltip>
           </template>
           <template v-else-if="column.key === 'created_at' || column.key === 'updated_at'">
             {{ new Date(record[column.key]).toLocaleString('zh-CN') }}
@@ -500,11 +567,20 @@ onUnmounted(() => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="250" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewBlog(record.uuid)">查看</a-button>
             <a-button size="small" type="primary" @click="editBlog(record.uuid)">编辑</a-button>
+            <a-button 
+              size="small" 
+              :type="record.status === 'published' ? 'default' : 'primary'"
+              @click="toggleBlogStatus(record.uuid, record.status)"
+              :loading="loading"
+              style="margin-right: 4px;"
+            >
+              {{ record.status === 'published' ? '下架' : '发布' }}
+            </a-button>
             <a-button 
               size="small" 
               danger 
@@ -855,6 +931,35 @@ onUnmounted(() => {
 :deep(.ant-table-container) {
   flex: 1;
   overflow: auto;
+}
+
+/* 标题单元格样式 */
+.title-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.title-cell:hover {
+  color: #1890ff;
+}
+
+/* 摘要单元格样式 */
+.summary-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1.4;
+  color: #666;
+}
+
+.summary-cell:hover {
+  color: #1890ff;
 }
 
 /* 统一表格样式 */

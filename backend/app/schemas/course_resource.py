@@ -1,7 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from enum import Enum
 import uuid
+
+
+class CourseResourceStatus(str, Enum):
+    draft = "draft"
+    published = "published"
+
 
 class CourseResourceBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -11,6 +18,7 @@ class CourseResourceBase(BaseModel):
     resource_url: str
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
+    status: CourseResourceStatus = Field(default=CourseResourceStatus.draft, description="资源状态")
 
 class CourseResourceCreate(CourseResourceBase):
     uuid: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -23,6 +31,7 @@ class CourseResourceUpdate(BaseModel):
     resource_url: Optional[str] = None
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
+    status: Optional[CourseResourceStatus] = None
 
 class CourseResourceInDB(CourseResourceBase):
     id: int
@@ -44,6 +53,7 @@ class CourseResourceResponse(BaseModel):
     resource_url: str
     file_size: Optional[int]
     mime_type: Optional[str]
+    status: CourseResourceStatus
     download_count: int
     creator_id: int
     created_at: datetime
@@ -65,6 +75,7 @@ class CourseResourceDetailResponse(BaseModel):
     resource_url: str
     file_size: Optional[int]
     mime_type: Optional[str]
+    status: CourseResourceStatus
     download_count: int
     created_at: datetime
     updated_at: datetime
@@ -75,3 +86,7 @@ class CourseResourceDetailResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class CourseResourceStatusUpdate(BaseModel):
+    status: CourseResourceStatus = Field(..., description="要更新的状态")

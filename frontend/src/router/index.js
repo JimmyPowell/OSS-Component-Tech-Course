@@ -83,6 +83,12 @@ const routes = [
         component: ShowcaseDetailPage,
       },
       {
+        path: 'showcase/submit',
+        name: 'ShowcaseSubmit',
+        component: () => import('../views/ShowcaseSubmitPage.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
         path: 'notifications',
         name: 'NotificationList',
         component: () => import('../views/NotificationListPage.vue'),
@@ -107,6 +113,12 @@ const routes = [
         path: 'blog/:uuid',
         name: 'BlogDetail',
         component: () => import('../views/BlogDetailPage.vue'),
+      },
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('../views/ProfilePage.vue'),
+        meta: { requiresAuth: true },
       },
     ],
   },

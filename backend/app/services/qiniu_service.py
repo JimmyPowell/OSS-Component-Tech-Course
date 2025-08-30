@@ -14,17 +14,32 @@ from app.config.settings import settings
 
 class QiniuService:
     def __init__(self):
+        print("[DEBUG] 初始化七牛云服务...")
+        
         self.access_key = os.getenv("QINIU_ACCESS_KEY")
         self.secret_key = os.getenv("QINIU_SECRET_KEY")
         self.bucket = os.getenv("QINIU_BUCKET", "default-bucket")
         self.upload_domain = os.getenv("QINIU_UPLOAD_DOMAIN", "https://upload-z0.qiniup.com")
         self.download_domain = os.getenv("QINIU_DOWNLOAD_DOMAIN", "https://your-domain.com")
         
+        print(f"[DEBUG] 七牛云配置:")
+        print(f"[DEBUG] - Access Key: {'已设置' if self.access_key else '未设置'}")
+        print(f"[DEBUG] - Secret Key: {'已设置' if self.secret_key else '未设置'}")
+        print(f"[DEBUG] - Bucket: {self.bucket}")
+        print(f"[DEBUG] - Upload Domain: {self.upload_domain}")
+        print(f"[DEBUG] - Download Domain: {self.download_domain}")
+        
         if not self.access_key or not self.secret_key:
+            print("[ERROR] 七牛云凭证未配置!")
             raise ValueError("Qiniu credentials not configured")
             
-        # 初始化七牛云官方Auth对象
-        self.qiniu_auth = Auth(self.access_key, self.secret_key)
+        try:
+            # 初始化七牛云官方Auth对象
+            self.qiniu_auth = Auth(self.access_key, self.secret_key)
+            print("[DEBUG] 七牛云Auth对象初始化成功")
+        except Exception as e:
+            print(f"[ERROR] 七牛云Auth对象初始化失败: {e}")
+            raise
     
     def _urlsafe_base64_encode(self, data: bytes) -> str:
         """URL-safe base64 encode"""

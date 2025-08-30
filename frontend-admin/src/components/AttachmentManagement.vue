@@ -73,6 +73,7 @@ const availableColumns = [
   { key: 'uuid', title: '附件编号', visible: false },
   { key: 'description', title: '附件描述', visible: true },
   { key: 'file_size', title: '文件大小', visible: true },
+  { key: 'status', title: '状态', visible: true },
   { key: 'download_count', title: '下载次数', visible: true },
   { key: 'creator_id', title: '发布者ID', visible: false },
   { key: 'created_at', title: '发布时间', visible: true },
@@ -84,6 +85,13 @@ const columnSettings = reactive([...availableColumns]);
 const tableHeight = ref(600);
 
 const API_BASE_URL = 'http://localhost:8000/api/v1/course-resources';
+const ADMIN_API_BASE_URL = 'http://localhost:8000/api/v1/admin/course-resources';
+
+// 状态选项
+const statusOptions = [
+  { label: '未发布', value: 'draft' },
+  { label: '已发布', value: 'published' }
+];
 
 // 根据MIME类型获取文件图标
 const getFileIcon = (mimeType) => {
@@ -143,7 +151,7 @@ const fetchResources = async (page = 1, pageSize = 20, search = '') => {
       params.append('name', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${ADMIN_API_BASE_URL}?${params}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
@@ -210,7 +218,7 @@ const handleTableChange = (page, pageSize) => {
 
 const viewResource = async (uuid) => {
   try {
-    const response = await request.get(`${API_BASE_URL}/${uuid}`);
+    const response = await request.get(`${ADMIN_API_BASE_URL}/${uuid}`);
     
     if (response.data.code === 200) {
       resourceDetail.value = response.data.data;
@@ -223,7 +231,7 @@ const viewResource = async (uuid) => {
 
 const editResource = async (uuid) => {
   try {
-    const response = await request.get(`${API_BASE_URL}/${uuid}`);
+    const response = await request.get(`${ADMIN_API_BASE_URL}/${uuid}`);
     
     if (response.data.code === 200) {
       const resource = response.data.data;
@@ -263,7 +271,7 @@ const editResource = async (uuid) => {
 
 const handleEditSubmit = async () => {
   try {
-    const response = await request.put(`${API_BASE_URL}/${editingResource.value.uuid}`, editForm);
+    const response = await request.put(`${ADMIN_API_BASE_URL}/${editingResource.value.uuid}`, editForm);
     
     if (response.data.code === 200) {
       message.success('附件信息更新成功');
@@ -281,6 +289,37 @@ const handleEditSubmit = async () => {
   }
 };
 
+// 切换附件状态
+const toggleResourceStatus = async (uuid, currentStatus) => {
+  const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+  const statusText = newStatus === 'published' ? '发布' : '下架';
+  
+  Modal.confirm({
+    title: `确认${statusText}附件`,
+    content: `确定要${statusText}该附件吗？`,
+    onOk: async () => {
+      try {
+        const response = await request.put(`${ADMIN_API_BASE_URL}/${uuid}/status`, {
+          status: newStatus
+        });
+        
+        if (response.data.code === 200) {
+          message.success(`附件${statusText}成功`);
+          refreshList();
+        } else {
+          message.error(response.data.message || `${statusText}失败`);
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${statusText}附件失败`);
+        }
+      }
+    }
+  });
+};
+
 const deleteResource = (uuid) => {
   const resource = resources.value.find(r => r.uuid === uuid);
   
@@ -290,7 +329,7 @@ const deleteResource = (uuid) => {
     okType: 'danger',
     onOk: async () => {
       try {
-        const response = await request.delete(`${API_BASE_URL}/${uuid}`);
+        const response = await request.delete(`${ADMIN_API_BASE_URL}/${uuid}`);
         
         if (response.data.code === 200) {
           message.success('附件删除成功');
@@ -979,7 +1018,7 @@ const handleAddResource = async () => {
   }
 
   try {
-    const response = await request.post(API_BASE_URL, addResourceForm);
+    const response = await request.post(ADMIN_API_BASE_URL, addResourceForm);
     
     if (response.data.code === 200) {
       message.success('附件创建成功');
@@ -1134,6 +1173,11 @@ onUnmounted(() => {
           <template v-else-if="column.key === 'created_at' || column.key === 'updated_at'">
             {{ new Date(record[column.key]).toLocaleString('zh-CN') }}
           </template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="record.status === 'published' ? 'green' : 'orange'">
+              {{ statusOptions.find(opt => opt.value === record.status)?.label || record.status }}
+            </a-tag>
+          </template>
           <template v-else-if="column.key === 'description'">
             <div class="description-cell">
               {{ record.description || '-' }}
@@ -1146,11 +1190,19 @@ onUnmounted(() => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="250" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewResource(record.uuid)">查看</a-button>
             <a-button size="small" type="primary" @click="editResource(record.uuid)">编辑</a-button>
+            <a-button 
+              size="small" 
+              :type="record.status === 'published' ? 'default' : 'primary'"
+              @click="toggleResourceStatus(record.uuid, record.status)"
+              style="margin-right: 4px;"
+            >
+              {{ record.status === 'published' ? '下架' : '发布' }}
+            </a-button>
             <a-button size="small" danger @click="deleteResource(record.uuid)">删除</a-button>
           </div>
         </template>

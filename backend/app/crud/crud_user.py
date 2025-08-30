@@ -45,6 +45,8 @@ def admin_create_user(db: Session, user_data: dict) -> User:
         school=user_data.get("school"),
         role=user_data.get("role", "user"),
         avatar_url=user_data.get("avatar_url"),
+        student_id=user_data.get("student_id"),
+        student_class=user_data.get("student_class"),
         is_active=True
     )
     db.add(db_user)
@@ -122,9 +124,12 @@ def ban_user(db: Session, user_id: int) -> Optional[User]:
     if not user:
         return None
     
+    print(f"封禁用户前: user_id={user_id}, is_active={user.is_active}")
     user.is_active = False
+    db.add(user)  # 显式添加到会话
     db.commit()
     db.refresh(user)
+    print(f"封禁用户后: user_id={user_id}, is_active={user.is_active}")
     return user
 
 def unban_user(db: Session, user_id: int) -> Optional[User]:
@@ -133,9 +138,12 @@ def unban_user(db: Session, user_id: int) -> Optional[User]:
     if not user:
         return None
     
+    print(f"解封用户前: user_id={user_id}, is_active={user.is_active}")
     user.is_active = True
+    db.add(user)  # 显式添加到会话
     db.commit()
     db.refresh(user)
+    print(f"解封用户后: user_id={user_id}, is_active={user.is_active}")
     return user
 
 def soft_delete_user(db: Session, user_id: int) -> Optional[User]:
@@ -149,3 +157,113 @@ def soft_delete_user(db: Session, user_id: int) -> Optional[User]:
     db.commit()
     db.refresh(user)
     return user
+
+def get_user_by_student_id(db: Session, student_id: str) -> Optional[User]:
+    """Get user by student ID"""
+    return db.query(User).filter(
+        and_(User.student_id == student_id, User.deleted_at.is_(None))
+    ).first()
+
+def check_batch_import_conflicts(db: Session, users_data: List[dict]) -> List[dict]:
+    """Check for conflicts in batch import data"""
+    conflicts = []
+    
+    for index, user_data in enumerate(users_data):
+        student_id = user_data.get("student_id")
+        real_name = user_data.get("real_name")
+        username = real_name  # Username is same as real_name in batch import
+        
+        # Check for student_id conflict
+        if student_id and get_user_by_student_id(db, student_id):
+            existing_user = get_user_by_student_id(db, student_id)
+            conflicts.append({
+                "row_index": index,
+                "student_id": student_id,
+                "real_name": real_name,
+                "student_class": user_data.get("student_class", ""),
+                "conflict_type": "student_id",
+                "existing_user": {
+                    "username": existing_user.username,
+                    "real_name": existing_user.real_name,
+                    "avatar_url": existing_user.avatar_url
+                }
+            })
+            continue
+            
+        # Check for real_name conflict (as username)
+        if real_name and get_user_by_username(db, real_name):
+            existing_user = get_user_by_username(db, real_name)
+            conflicts.append({
+                "row_index": index,
+                "student_id": student_id,
+                "real_name": real_name,
+                "student_class": user_data.get("student_class", ""),
+                "conflict_type": "username",
+                "existing_user": {
+                    "username": existing_user.username,
+                    "real_name": existing_user.real_name,
+                    "avatar_url": existing_user.avatar_url
+                }
+            })
+    
+    return conflicts
+
+def batch_create_users(db: Session, users_data: List[dict], conflict_resolution: str = "cancel") -> dict:
+    """Batch create users with conflict resolution"""
+    created_users = []
+    errors = []
+    
+    try:
+        for index, user_data in enumerate(users_data):
+            try:
+                # Handle conflicts based on resolution strategy
+                if conflict_resolution == "overwrite":
+                    # Delete existing user if exists
+                    existing_user = None
+                    if user_data.get("student_id"):
+                        existing_user = get_user_by_student_id(db, user_data["student_id"])
+                    if not existing_user and user_data.get("real_name"):
+                        existing_user = get_user_by_username(db, user_data["real_name"])
+                    
+                    if existing_user:
+                        db.delete(existing_user)
+                        db.flush()
+                
+                # Create new user
+                username = user_data["real_name"]
+                password = user_data["real_name"]  # Password same as real_name
+                # Generate temporary email with valid domain
+                import time
+                email = f"{username}_{int(time.time())}@example.com"
+                
+                new_user_data = {
+                    "username": username,
+                    "email": email,
+                    "password": password,
+                    "real_name": user_data["real_name"],
+                    "phone_number": "",
+                    "school": "",
+                    "student_id": user_data.get("student_id"),
+                    "student_class": user_data.get("student_class"),
+                    "role": "user"
+                }
+                
+                user = admin_create_user(db, new_user_data)
+                created_users.append(user)
+                
+            except Exception as e:
+                errors.append(f"Row {index + 1}: {str(e)}")
+                continue
+        
+        db.commit()
+        
+        return {
+            "success_count": len(created_users),
+            "error_count": len(errors),
+            "errors": errors,
+            "created_users": created_users
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise e

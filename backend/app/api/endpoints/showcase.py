@@ -13,6 +13,7 @@ from app.schemas.showcase import (
     ShowcaseUpdate,
     ShowcaseResponse,
     ShowcaseReviewRequest,
+    ShowcasePromotionRequest,
 )
 from app.utils.response import Success, NotFound, BadRequest
 
@@ -113,7 +114,7 @@ def read_showcases(
 @admin_router.get("/pending-review")
 def get_pending_review_showcases_admin(
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
@@ -148,6 +149,46 @@ def read_showcase_admin(
     if not showcase:
         return NotFound(message="Showcase not found")
     return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())
+
+# 前端用户作品展示端点（仅显示优秀作品）- 必须在/{uuid}路由之前
+@router.get("/frontend")
+def read_showcases_frontend(
+    db: Session = Depends(deps.get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    name: Optional[str] = Query(None),
+    start_time: Optional[datetime] = Query(None),
+    end_time: Optional[datetime] = Query(None),
+):
+    """
+    Retrieve showcases for frontend display (only excellent works).
+    """
+    try:
+        total, showcases = crud_showcase.get_showcases_for_frontend(
+            db,
+            skip=skip,
+            limit=limit,
+            name=name,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        print(f"DEBUG: Found {total} showcases with excellent status")
+        
+        if total == 0:
+            return Success(data={"total": 0, "items": []})
+        
+        showcase_items = []
+        for s in showcases:
+            try:
+                showcase_items.append(ShowcaseResponse.from_orm(s).model_dump())
+            except Exception as e:
+                print(f"DEBUG: Error converting showcase {s.id}: {e}")
+                continue
+                
+        return Success(data={"total": total, "items": showcase_items})
+    except Exception as e:
+        print(f"DEBUG: Error in frontend showcase API: {e}")
+        return Success(data={"total": 0, "items": [], "debug_error": str(e)})
 
 @router.get("/{uuid}")
 def read_showcase(
@@ -260,8 +301,8 @@ def review_showcase_admin(
     if not showcase:
         return NotFound(message="Showcase not found")
     
-    if showcase.status not in ['pending_review', 'draft']:
-        return BadRequest(message="Showcase cannot be reviewed in current status")
+    if showcase.status != 'pending':
+        return BadRequest(message="Only pending showcases can be reviewed")
     
     if review_request.action == "approve":
         showcase = crud_showcase.approve_showcase(
@@ -306,3 +347,93 @@ def review_showcase_admin(
         crud_notification.create_notification(db=db, notification_in=notification_in)
     
     return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())
+
+
+# 管理员设为优秀作品端点
+@admin_router.post("/{uuid}/promote")
+def promote_showcase_admin(
+    *,
+    db: Session = Depends(deps.get_db),
+    uuid: str,
+    promotion_request: ShowcasePromotionRequest,
+    current_user: User = Depends(deps.get_current_manager_user),
+):
+    """
+    Promote showcase to excellent - Admin only.
+    """
+    showcase = crud_showcase.get_showcase_by_uuid(db=db, uuid=uuid)
+    if not showcase:
+        return NotFound(message="Showcase not found")
+    
+    if showcase.status != 'published':
+        return BadRequest(message="Only published showcases can be promoted to excellent")
+    
+    if promotion_request.action != "excellent":
+        return BadRequest(message="Only 'excellent' promotion is supported")
+    
+    showcase = crud_showcase.promote_to_excellent(
+        db=db, 
+        db_obj=showcase, 
+        reviewer_id=current_user.id,
+        review_comment=promotion_request.review_comment
+    )
+    
+    # 创建提升通知
+    notification_in = NotificationCreate(
+        recipient_id=showcase.author_id,
+        admin_id=current_user.id,
+        type="showcase_promoted",
+        title=f"作品《{showcase.name}》已设为优秀",
+        content=promotion_request.review_comment if promotion_request.review_comment else "恭喜！您的作品已被设为优秀作品。",
+        related_id=showcase.id,
+        related_uuid=showcase.uuid
+    )
+    crud_notification.create_notification(db=db, notification_in=notification_in)
+    
+    return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())
+
+
+# 管理员下架作品端点
+@admin_router.post("/{uuid}/archive")
+def archive_showcase_admin(
+    *,
+    db: Session = Depends(deps.get_db),
+    uuid: str,
+    current_user: User = Depends(deps.get_current_manager_user),
+):
+    """
+    Archive showcase (published/excellent -> draft) - Admin only.
+    """
+    showcase = crud_showcase.get_showcase_by_uuid(db=db, uuid=uuid)
+    if not showcase:
+        return NotFound(message="Showcase not found")
+    
+    if showcase.status not in ['published', 'excellent']:
+        return BadRequest(message="Only published or excellent showcases can be archived")
+    
+    showcase = crud_showcase.archive_showcase(db=db, db_obj=showcase)
+    return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())
+
+
+# 管理员恢复作品端点  
+@admin_router.post("/{uuid}/restore")
+def restore_showcase_admin(
+    *,
+    db: Session = Depends(deps.get_db),
+    uuid: str,
+    current_user: User = Depends(deps.get_current_manager_user),
+):
+    """
+    Restore showcase (draft -> published/excellent) - Admin only.
+    """
+    showcase = crud_showcase.get_showcase_by_uuid(db=db, uuid=uuid)
+    if not showcase:
+        return NotFound(message="Showcase not found")
+    
+    if showcase.status != 'draft' or not showcase.previous_status:
+        return BadRequest(message="Only drafted showcases with previous status can be restored")
+    
+    showcase = crud_showcase.restore_showcase(db=db, db_obj=showcase)
+    return Success(data=ShowcaseResponse.from_orm(showcase).model_dump())
+
+

@@ -1,7 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Any
 from datetime import datetime
+from enum import Enum
 import uuid
+
+class HomeworkStatus(str, Enum):
+    draft = "draft"
+    published = "published"
 
 class HomeworkBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -10,6 +15,7 @@ class HomeworkBase(BaseModel):
     cover_url: Optional[str] = None
     resource_urls: Optional[List[str]] = None
     lasting_time: Optional[int] = None
+    status: HomeworkStatus = Field(default=HomeworkStatus.draft)
 
 class HomeworkCreate(HomeworkBase):
     uuid: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -21,6 +27,7 @@ class HomeworkUpdate(BaseModel):
     cover_url: Optional[str] = None
     resource_urls: Optional[List[str]] = None
     lasting_time: Optional[int] = None
+    status: Optional[HomeworkStatus] = None
 
 class HomeworkInDB(HomeworkBase):
     id: int
@@ -40,6 +47,7 @@ class HomeworkResponse(BaseModel):
     cover_url: Optional[str]
     resource_urls: Optional[List[Any]]
     lasting_time: Optional[int]
+    status: HomeworkStatus
     creator_id: int
     created_at: datetime
     updated_at: datetime
@@ -55,6 +63,7 @@ class HomeworkDetailResponse(BaseModel):
     cover_url: Optional[str]
     resource_urls: Optional[List[Any]]
     lasting_time: Optional[int]
+    status: HomeworkStatus
     creator_id: int
     publisher_name: Optional[str] = None
     publisher_avatar: Optional[str] = None
@@ -67,3 +76,6 @@ class HomeworkDetailResponse(BaseModel):
 class PaginatedHomeworkResponse(BaseModel):
     total: int
     items: List[HomeworkResponse]
+
+class HomeworkStatusUpdate(BaseModel):
+    status: HomeworkStatus

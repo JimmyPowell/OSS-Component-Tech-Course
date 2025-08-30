@@ -20,7 +20,7 @@ router = APIRouter()
 def request_upload_token(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_user_obj),
     token_request: QiniuTokenCreate
 ):
     """
@@ -73,7 +73,7 @@ def request_upload_token(
 def request_download_token(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_user_obj),
     token_request: QiniuTokenCreate,
     file_url: str
 ):
@@ -127,7 +127,7 @@ def request_download_token(
 def get_my_tokens(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_user_obj),
     skip: int = 0,
     limit: int = 20
 ):
@@ -148,7 +148,7 @@ def get_my_tokens(
 def get_pending_tokens(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
     skip: int = 0,
     limit: int = 20
 ):
@@ -169,7 +169,7 @@ def get_pending_tokens(
 def approve_token(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
     token_id: int,
     approval_data: QiniuTokenApproval
 ):
@@ -206,7 +206,7 @@ def approve_token(
 def mark_token_used(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
+    current_user: User = Depends(deps.get_current_user_obj),
     token_id: int
 ):
     """
@@ -244,7 +244,7 @@ def mark_token_used(
 def cleanup_expired_tokens(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_manager_user)
+    current_user: User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Cleanup expired tokens (Manager only)
@@ -259,7 +259,7 @@ def cleanup_expired_tokens(
 
 @router.get("/bucket-info", )
 def get_bucket_info(
-    current_user: User = Depends(deps.get_current_manager_user)
+    current_user: User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Get Qiniu bucket configuration info (Manager only)
@@ -276,20 +276,35 @@ def get_bucket_info(
 def request_admin_upload_token(
     *,
     db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
     upload_request: QiniuAdminUploadRequest
 ):
     """
     Request an upload token for managers (auto-approved)
     """
     try:
+        print(f"[DEBUG] 开始处理管理员上传token请求")
+        print(f"[DEBUG] 用户ID: {current_user.id}, 用户名: {current_user.username}")
+        print(f"[DEBUG] 上传请求: {upload_request.dict()}")
+        
+        # 检查七牛云服务配置
+        bucket_info = qiniu_service.get_bucket_info()
+        print(f"[DEBUG] 七牛云配置信息: {bucket_info}")
+        
+        if not bucket_info.get("configured"):
+            raise ValueError("七牛云服务未正确配置，请检查环境变量")
+        
         # Generate upload token (expires in 1 hour by default)
         expires_seconds = 3600
+        print(f"[DEBUG] 正在生成上传token，bucket: {qiniu_service.bucket}, key: {upload_request.file_key}")
+        
         upload_token = qiniu_service.generate_upload_token(
             bucket=qiniu_service.bucket,  # Use default bucket from env
             key=upload_request.file_key,
             expires=expires_seconds
         )
+        
+        print(f"[DEBUG] 成功生成上传token: {upload_token[:50]}...")
         
         expires_at = datetime.utcnow() + timedelta(seconds=expires_seconds)
         
@@ -301,6 +316,7 @@ def request_admin_upload_token(
             purpose=upload_request.purpose
         )
         
+        print(f"[DEBUG] 正在创建token记录")
         token_record = crud_qiniu_token.create_token_request(
             db=db,
             token_data=token_data,
@@ -309,7 +325,10 @@ def request_admin_upload_token(
             expires_at=expires_at
         )
         
+        print(f"[DEBUG] Token记录创建成功，ID: {token_record.id}")
+        
         # Auto-approve for managers
+        print(f"[DEBUG] 正在自动审批token")
         approved_token = crud_qiniu_token.approve_token(
             db=db,
             token_id=token_record.id,
@@ -317,17 +336,30 @@ def request_admin_upload_token(
             approval_data=QiniuTokenApproval(status=TokenStatus.approved)
         )
         
+        print(f"[DEBUG] Token审批成功")
+        
+        response_data = {
+            **QiniuTokenResponse.from_orm(approved_token).dict(),
+            "upload_domain": qiniu_service.upload_domain,
+            "download_domain": qiniu_service.download_domain
+        }
+        
+        print(f"[DEBUG] 返回响应数据: {response_data}")
+        
         return UnifiedResponse(
             code=201,
             message="Upload token generated and approved successfully",
-            data={
-                **QiniuTokenResponse.from_orm(approved_token).dict(),
-                "upload_domain": qiniu_service.upload_domain,
-                "download_domain": qiniu_service.download_domain
-            }
+            data=response_data
         )
         
     except Exception as e:
+        import traceback
+        print(f"[ERROR] 生成上传token失败:")
+        print(f"[ERROR] 错误类型: {type(e).__name__}")
+        print(f"[ERROR] 错误消息: {str(e)}")
+        print(f"[ERROR] 堆栈跟踪:")
+        traceback.print_exc()
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate upload token: {str(e)}"

@@ -22,10 +22,15 @@
 
       <!-- 主要内容区域 -->
       <div class="main-content">
-        <!-- 左侧视频播放区域 -->
+        <!-- 视频播放区域 -->
         <div class="video-section">
+          <!-- 返回按钮 -->
+          <button @click="goBack" class="back-button">
+            <span class="iconfont icon-l-left"></span>
+            <span>返回</span>
+          </button>
           <!-- 视频播放器区域 -->
-          <div class="video-player-wrapper">
+          <div class="video-player-wrapper" style="margin-top: -5px;">
             <div class="video-player">
               <video
                 ref="videoRef"
@@ -114,56 +119,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 右侧章节/进度列表 -->
-        <div class="chapters-section">
-          <div class="section-header">
-            <h3>课程进度</h3>
-          </div>
-          
-          <div class="progress-overview">
-            <div class="progress-bar-container">
-              <div class="progress-label">
-                <span>课程进度</span>
-                <span class="progress-text">{{ Math.round(courseProgress) }}%</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" :style="{ width: courseProgress + '%' }"></div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="chapters-list">
-            <div class="chapters-header">
-              <h4>章节目录</h4>
-              <span class="chapters-count">{{ chapters.length }} 个章节</span>
-            </div>
-            
-            <div class="chapter-items">
-              <div 
-                v-for="(chapter, index) in chapters" 
-                :key="chapter.id"
-                :class="['chapter-item', { 
-                  'active': currentChapterId === chapter.id,
-                  'completed': chapter.completed 
-                }]"
-                @click="switchChapter(chapter)"
-              >
-                <div class="chapter-number">{{ index + 1 }}</div>
-                <div class="chapter-content">
-                  <div class="chapter-title">{{ chapter.title }}</div>
-                  <div class="chapter-duration">{{ chapter.duration }}</div>
-                  <div class="chapter-description">{{ chapter.description }}</div>
-                </div>
-                <div class="chapter-status">
-                  <div v-if="chapter.completed" class="status-icon completed">✓</div>
-                  <div v-else-if="currentChapterId === chapter.id" class="status-icon current">▶</div>
-                  <div v-else class="status-icon pending">○</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -174,6 +129,9 @@
       </div>
       <div class="ai-pulse"></div>
     </div>
+    
+    <!-- 通知组件 -->
+    <Notification ref="notificationRef" message="敬请期待" type="success" />
   </div>
 </template>
 
@@ -181,6 +139,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getCourseResourceDetail, getVideoResources, incrementViewCount } from '@/api/courseResource.js';
+import Notification from '../components/Notification.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -302,6 +261,17 @@ const navigateToVideoSection = () => {
   });
 };
 
+// 返回上一级页面
+const goBack = () => {
+  // 首先尝试返回浏览器历史
+  if (window.history.length > 1) {
+    router.go(-1);
+  } else {
+    // 如果没有历史记录，则跳转到课程资源页面
+    router.push('/resources');
+  }
+};
+
 // 视频事件处理
 const handleTimeUpdate = () => {
   if (videoRef.value) {
@@ -391,9 +361,12 @@ const formatDate = (dateString) => {
 };
 
 // AI助手相关
+const notificationRef = ref(null);
+
 const toggleAIChat = () => {
-  console.log('AI助手功能待实现');
-  // 这里可以添加AI对话界面的显示/隐藏逻辑
+  if (notificationRef.value) {
+    notificationRef.value.show();
+  }
 };
 
 // 组件挂载时获取数据
@@ -408,6 +381,43 @@ onMounted(async () => {
   padding: 60px;
   min-height: 100vh;
   background: #f9f9f9;
+}
+
+/* 返回按钮样式 */
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  margin-bottom: 15px;
+  background: rgba(248, 249, 250, 0.8);
+  border: 1px solid rgba(233, 236, 239, 0.6);
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+  width: fit-content;
+}
+
+.back-button:hover {
+  color: #5277ff;
+  background: rgba(82, 119, 255, 0.05);
+}
+
+.back-button:active {
+  transform: translateX(-2px);
+}
+
+.back-button .iconfont {
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover .iconfont {
+  transform: translateX(-2px);
 }
 
 /* 面包屑导航样式 */
@@ -482,17 +492,19 @@ onMounted(async () => {
 /* 主要内容区域 */
 .main-content {
   display: flex;
-  gap: 30px;
+  justify-content: center;
   align-items: flex-start;
 }
 
 /* 视频播放区域 */
 .video-section {
-  flex: 1;
+  width: 100%;
+  max-width: 1200px;
   background: white;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  padding: 20px;
 }
 
 .video-player-wrapper {
@@ -503,8 +515,12 @@ onMounted(async () => {
 .video-player {
   position: relative;
   width: 100%;
-  height: 70vh;
-  min-height: 600px;
+  aspect-ratio: 16/9;
+  min-height: 500px;
+  max-height: 70vh;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .video-element {
@@ -512,38 +528,47 @@ onMounted(async () => {
   height: 100%;
   background: #000;
   object-fit: contain;
+  border-radius: 8px;
 }
 
 /* 视频信息 */
 .video-info {
   padding: 30px;
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
 }
 
 .video-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   color: #333;
-  margin: 0 0 20px 0;
+  margin: 0 0 25px 0;
   line-height: 1.4;
 }
 
 .video-details {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 25px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 15px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f4;
 }
 
 .detail-item > span:first-child {
-  font-weight: 500;
-  color: #666;
-  width: 80px;
+  font-weight: 600;
+  color: #495057;
+  width: 90px;
   flex-shrink: 0;
 }
 
@@ -562,10 +587,12 @@ onMounted(async () => {
 }
 
 .video-description {
-  padding: 20px;
-  background: #f8f9fa;
+  padding: 25px;
+  background: white;
   border-radius: 8px;
   border-left: 4px solid #5277ff;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .video-description p {
@@ -578,235 +605,6 @@ onMounted(async () => {
   margin-bottom: 0;
 }
 
-/* 章节/进度区域 */
-.chapters-section {
-  width: 350px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  height: fit-content;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.section-header {
-  padding: 20px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.section-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-/* 进度概览 */
-.progress-overview {
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.progress-bar-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.progress-text {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.progress-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: white;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-/* 章节列表 */
-.chapters-list {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.chapters-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.chapters-header h4 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.chapters-count {
-  font-size: 12px;
-  color: #666;
-  background: #e9ecef;
-  padding: 2px 8px;
-  border-radius: 10px;
-}
-
-.chapter-items {
-  padding: 8px 0;
-}
-
-.chapter-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  cursor: pointer;
-  border-bottom: 1px solid #f5f5f5;
-  transition: all 0.2s ease;
-  gap: 12px;
-}
-
-.chapter-item:hover {
-  background-color: #f8f9fa;
-}
-
-.chapter-item.active {
-  background-color: #e6f7ff;
-  border-left: 3px solid #5277ff;
-}
-
-.chapter-item.completed {
-  opacity: 0.8;
-}
-
-.chapter-number {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #666;
-  flex-shrink: 0;
-}
-
-.chapter-item.active .chapter-number {
-  background: #5277ff;
-  color: white;
-}
-
-.chapter-item.completed .chapter-number {
-  background: #52c41a;
-  color: white;
-}
-
-.chapter-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.chapter-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin: 0 0 4px 0;
-  line-height: 1.3;
-}
-
-.chapter-duration {
-  font-size: 12px;
-  color: #5277ff;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.chapter-description {
-  font-size: 12px;
-  color: #666;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.chapter-item.active .chapter-title {
-  color: #5277ff;
-  font-weight: 600;
-}
-
-.chapter-status {
-  flex-shrink: 0;
-}
-
-.status-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-icon.completed {
-  background: #52c41a;
-  color: white;
-}
-
-.status-icon.current {
-  background: #5277ff;
-  color: white;
-}
-
-.status-icon.pending {
-  background: #f0f0f0;
-  color: #999;
-}
-
-/* 滚动条样式 */
-.chapters-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chapters-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.chapters-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-.chapters-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
 
 /* AI助手圆球按钮 */
 .ai-assistant-button {
@@ -876,15 +674,23 @@ onMounted(async () => {
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-  .chapters-section {
-    width: 300px;
-  }
-}
-
 @media (max-width: 768px) {
   .video-preview-page {
     padding: 20px;
+  }
+  
+  .video-section {
+    padding: 15px;
+  }
+  
+  .back-button {
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  
+  .back-button .iconfont {
+    font-size: 14px;
   }
   
   .breadcrumb-nav {
@@ -903,9 +709,8 @@ onMounted(async () => {
     gap: 20px;
   }
   
-  .chapters-section {
-    width: 100%;
-    max-height: 50vh;
+  .video-section {
+    max-width: 100%;
   }
   
   .video-player {
@@ -934,20 +739,6 @@ onMounted(async () => {
   
   .ai-icon span {
     font-size: 12px;
-  }
-  
-  .chapter-item {
-    padding: 12px 16px;
-  }
-  
-  .chapter-number {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
-  }
-  
-  .progress-overview {
-    padding: 16px;
   }
 }
 </style>

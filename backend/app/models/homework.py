@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, TEXT, JSON
+from sqlalchemy import Column, String, TIMESTAMP, TEXT, JSON, Enum
 from sqlalchemy.dialects.mysql import INTEGER, LONGTEXT
 from sqlalchemy.sql import func
 
@@ -17,6 +17,7 @@ class Homework(Base):
     resource_urls = Column(JSON, nullable=True)
     creator_id = Column(INTEGER(unsigned=True), nullable=False, index=True)
     lasting_time = Column(INTEGER(unsigned=True), nullable=True, comment='Lasting time in minutes')
+    status = Column(Enum('draft', 'published', name='homework_status'), nullable=False, server_default='draft', index=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True, index=True)

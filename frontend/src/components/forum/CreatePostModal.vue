@@ -95,6 +95,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 import { useAuthStore } from '../../stores/auth'
 import { forumApi } from '../../api/forum'
 
@@ -153,22 +154,22 @@ const insertFormat = (prefix, suffix) => {
 const validateForm = () => {
   console.log('验证表单 - category_id:', formData.category_id, 'type:', typeof formData.category_id)
   if (!formData.category_id || formData.category_id === '' || formData.category_id === null || formData.category_id === undefined) {
-    alert('请选择讨论分类')
+    message.warning('请选择讨论分类')
     return false
   }
   
   if (!formData.title.trim()) {
-    alert('请输入讨论标题')
+    message.warning('请输入讨论标题')
     return false
   }
   
   if (formData.title.length > 200) {
-    alert('标题长度不能超过200个字符')
+    message.warning('标题长度不能超过200个字符')
     return false
   }
   
   if (!formData.content.trim()) {
-    alert('请输入讨论内容')
+    message.warning('请输入讨论内容')
     return false
   }
   
@@ -181,7 +182,7 @@ const handleSubmit = async () => {
   
   // 检查用户登录状态
   if (!authStore.isAuthenticated) {
-    alert('请先登录后再发表讨论')
+    message.warning('请先登录后再发表讨论')
     authStore.showLoginModal()
     return
   }
@@ -198,7 +199,7 @@ const handleSubmit = async () => {
     await forumApi.post.createPost(postData)
     
     // 成功提示
-    alert('讨论发表成功！')
+    message.success('讨论发表成功！')
     
     // 通知父组件
     emit('created')
@@ -209,12 +210,12 @@ const handleSubmit = async () => {
     console.error('发表讨论失败:', error)
     
     if (error.response?.status === 401) {
-      alert('登录已过期，请重新登录')
+      message.error('登录已过期，请重新登录')
       authStore.showLoginModal()
     } else if (error.response?.status === 400) {
-      alert(error.response.data?.message || '发表失败，请检查输入内容')
+      message.error(error.response.data?.message || '发表失败，请检查输入内容')
     } else {
-      alert('发表讨论失败，请稍后重试')
+      message.error('发表讨论失败，请稍后重试')
     }
   } finally {
     submitting.value = false

@@ -13,7 +13,7 @@ router = APIRouter()
 def create_user(
     user_data: AdminUserCreate,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Create user directly by admin (Manager only).
@@ -43,7 +43,7 @@ def get_users(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     school: Optional[str] = Query(None, description="Filter by school"),
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Get users with pagination and optional search/filter (Manager only).
@@ -75,7 +75,7 @@ def get_users(
 def get_user(
     user_id: int,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Get user by ID (Manager only).
@@ -91,7 +91,7 @@ def update_user(
     user_id: int,
     user_update: UserUpdate,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Update user information (Manager only).
@@ -120,19 +120,24 @@ def update_user(
 def ban_user(
     user_id: int,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Ban user (set is_active to False) (Manager only).
     """
+    print(f"API: 尝试封禁用户 {user_id}，管理员: {current_manager.id}")
+    
     # Prevent managers from banning themselves
     if user_id == current_manager.id:
+        print(f"API: 管理员不能封禁自己")
         return BadRequest(message="Cannot ban yourself")
     
     user = crud.crud_user.ban_user(db=db, user_id=user_id)
     if not user:
+        print(f"API: 用户 {user_id} 未找到")
         return NotFound(message="User not found")
     
+    print(f"API: 用户 {user_id} 封禁成功，状态: {user.is_active}")
     return Success(
         data=UserResponse.from_orm(user).dict(),
         message="User banned successfully"
@@ -142,15 +147,19 @@ def ban_user(
 def unban_user(
     user_id: int,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Unban user (set is_active to True) (Manager only).
     """
+    print(f"API: 尝试解封用户 {user_id}，管理员: {current_manager.id}")
+    
     user = crud.crud_user.unban_user(db=db, user_id=user_id)
     if not user:
+        print(f"API: 用户 {user_id} 未找到")
         return NotFound(message="User not found")
     
+    print(f"API: 用户 {user_id} 解封成功，状态: {user.is_active}")
     return Success(
         data=UserResponse.from_orm(user).dict(),
         message="User unbanned successfully"
@@ -160,7 +169,7 @@ def unban_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(deps.get_db),
-    current_manager: models.User = Depends(deps.get_current_manager_user)
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
 ):
     """
     Soft delete user (Manager only).

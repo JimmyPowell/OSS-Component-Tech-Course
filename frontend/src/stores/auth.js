@@ -95,6 +95,8 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true }
     } catch (error) {
       console.error('登录失败：', error)
+      console.error('Error response:', error.response) // 调试信息
+      console.error('Error response data:', error.response?.data) // 调试信息
       
       // 更详细地提取错误信息
       let errorMessage = '登录失败，请检查您的凭据。'
@@ -102,6 +104,9 @@ export const useAuthStore = defineStore('auth', () => {
       // 尝试从不同的错误响应结构中获取消息
       if (error.response) {
         const { data } = error.response
+        console.log('Response data type:', typeof data) // 调试信息
+        console.log('Response data content:', data) // 调试信息
+        
         if (typeof data === 'string') {
           // 如果响应是字符串
           errorMessage = data
@@ -110,6 +115,8 @@ export const useAuthStore = defineStore('auth', () => {
           errorMessage = data.message || data.msg || data.error || 
                         (data.data && data.data.message) || errorMessage
         }
+        
+        console.log('Extracted error message:', errorMessage) // 调试信息
         
         // 特定的HTTP状态码处理
         if (error.response.status === 401) {
@@ -122,6 +129,8 @@ export const useAuthStore = defineStore('auth', () => {
         errorMessage = error.message.includes('Network') ? 
                      '网络连接错误，请检查您的互联网连接' : error.message
       }
+      
+      console.log('Final error message:', errorMessage) // 调试信息
       
       return { 
         success: false, 

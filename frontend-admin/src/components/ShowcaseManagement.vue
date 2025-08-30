@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch, onUnmounted } from 'vue';
-import { SearchOutlined, PlusOutlined, SettingOutlined, AppstoreOutlined, UploadOutlined, TagOutlined } from '@ant-design/icons-vue';
+import { SearchOutlined, PlusOutlined, SettingOutlined, AppstoreOutlined, UploadOutlined, TagOutlined, MessageOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons-vue';
 import { message, Modal } from 'ant-design-vue';
 import request from '../utils/request';
 
@@ -56,6 +56,17 @@ const isEditAvatarUploading = ref(false);
 const showcaseDetailDrawerVisible = ref(false);
 const showcaseDetail = ref(null);
 
+// 讨论管理相关
+const commentsDrawerVisible = ref(false);
+const currentShowcase = ref(null);
+const showcaseComments = ref([]);
+const loadingComments = ref(false);
+const expandedCommentKeys = ref([]);
+const commentDetails = ref({});
+const commentReplies = ref({});
+const loadingDetails = ref(new Set());
+const loadingReplies = ref(new Set());
+
 // 列设置
 const columnSettingsVisible = ref(false);
 const availableColumns = [
@@ -66,6 +77,7 @@ const availableColumns = [
   { key: 'status', title: '状态', visible: true },
   { key: 'views_count', title: '浏览数', visible: true },
   { key: 'likes_count', title: '点赞数', visible: true },
+  { key: 'comments_count', title: '评论数', visible: true },
   { key: 'author_id', title: '作者ID', visible: false },
   { key: 'created_at', title: '创建时间', visible: true },
   { key: 'updated_at', title: '更新时间', visible: false }
@@ -75,12 +87,6 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-// 状态选项
-const statusOptions = [
-  { label: '草稿', value: 'draft' },
-  { label: '已发布', value: 'published' },
-  { label: '已归档', value: 'archived' }
-];
 
 const API_BASE_URL = 'http://localhost:8000/api/v1/admin/showcases';
 
@@ -518,6 +524,243 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateTableHeight);
 });
 
+// 下架作品
+const archiveShowcase = async (uuid) => {
+  Modal.confirm({
+    title: '确认下架作品',
+    content: '确定要下架这个作品吗？下架后可以重新恢复。',
+    onOk: async () => {
+      try {
+        const response = await request.post(`${API_BASE_URL}/${uuid}/archive`);
+        
+        if (response.data.code === 200) {
+          message.success('作品下架成功');
+          refreshList();
+        } else {
+          message.error(response.data.message || '下架失败');
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error('下架作品失败');
+        }
+      }
+    }
+  });
+};
+
+// 恢复作品
+const restoreShowcase = async (uuid) => {
+  Modal.confirm({
+    title: '确认恢复作品',
+    content: '确定要恢复这个作品吗？',
+    onOk: async () => {
+      try {
+        const response = await request.post(`${API_BASE_URL}/${uuid}/restore`);
+        
+        if (response.data.code === 200) {
+          message.success('作品恢复成功');
+          refreshList();
+        } else {
+          message.error(response.data.message || '恢复失败');
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error('恢复作品失败');
+        }
+      }
+    }
+  });
+};
+
+// 设为优秀作品
+const promoteToExcellent = async (uuid) => {
+  Modal.confirm({
+    title: '确认设为优秀',
+    content: '确定要将这个作品设为优秀吗？',
+    onOk: async () => {
+      try {
+        const response = await request.post(`${API_BASE_URL}/${uuid}/promote`, {
+          action: 'excellent',
+          review_comment: '管理员设为优秀操作'
+        });
+        
+        if (response.data.code === 200) {
+          message.success('作品设为优秀成功');
+          refreshList();
+        } else {
+          message.error(response.data.message || '设为优秀失败');
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error('设为优秀失败');
+        }
+      }
+    }
+  });
+};
+
+// 获取状态颜色
+const getStatusColor = (status) => {
+  const statusColors = {
+    'draft': 'default',
+    'pending': 'orange', 
+    'published': 'blue',
+    'reject': 'red',
+    'excellent': 'purple'
+  };
+  return statusColors[status] || 'default';
+};
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const statusTexts = {
+    'draft': '草稿',
+    'pending': '待审核',
+    'published': '已发布',
+    'reject': '已拒绝', 
+    'excellent': '优秀'
+  };
+  return statusTexts[status] || status;
+};
+
+// ==================== 讨论管理相关方法 ====================
+
+// 查看作品讨论
+const viewShowcaseComments = async (showcase) => {
+  currentShowcase.value = showcase;
+  commentsDrawerVisible.value = true;
+  await fetchShowcaseComments(showcase.uuid);
+};
+
+// 获取作品评论列表
+const fetchShowcaseComments = async (showcaseUuid, page = 1, pageSize = 20) => {
+  loadingComments.value = true;
+  try {
+    // 先通过showcase UUID获取showcase ID
+    const showcaseResponse = await request.get(`http://localhost:8000/api/v1/showcases/${showcaseUuid}`);
+    
+    if (showcaseResponse.data.code !== 200) {
+      message.error('获取作品信息失败');
+      return;
+    }
+    
+    const showcaseId = showcaseResponse.data.data.id;
+    
+    // 获取评论列表
+    const response = await request.get(`http://localhost:8000/api/v1/showcase-comments?showcase_id=${showcaseId}&skip=0&limit=100`);
+    
+    if (response.data.code === 200) {
+      showcaseComments.value = response.data.data.items;
+    } else {
+      message.error('获取评论列表失败');
+    }
+  } catch (error) {
+    console.error('获取评论失败:', error);
+    message.error('获取评论列表失败');
+  } finally {
+    loadingComments.value = false;
+  }
+};
+
+// 加载评论回复
+const loadCommentReplies = async (commentUuid) => {
+  if (loadingReplies.value.has(commentUuid)) return;
+  
+  loadingReplies.value.add(commentUuid);
+  try {
+    const response = await request.get(`http://localhost:8000/api/v1/showcase-comment-replies?comment_uuid=${commentUuid}&skip=0&limit=100`);
+    
+    if (response.data.code === 200) {
+      commentReplies.value[commentUuid] = response.data.data.items;
+    } else {
+      commentReplies.value[commentUuid] = [];
+    }
+  } catch (error) {
+    console.error('获取回复失败:', error);
+    commentReplies.value[commentUuid] = [];
+  } finally {
+    loadingReplies.value.delete(commentUuid);
+  }
+};
+
+// 展开/折叠评论详情
+const toggleCommentExpansion = async (commentUuid) => {
+  const index = expandedCommentKeys.value.indexOf(commentUuid);
+  if (index > -1) {
+    // 折叠
+    expandedCommentKeys.value.splice(index, 1);
+  } else {
+    // 展开
+    expandedCommentKeys.value.push(commentUuid);
+    // 加载回复数据
+    await loadCommentReplies(commentUuid);
+  }
+};
+
+// 删除评论
+const deleteShowcaseComment = (commentUuid) => {
+  Modal.confirm({
+    title: '确认删除评论',
+    content: '确定要删除这条评论吗？此操作不可恢复！',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        const response = await request.delete(`http://localhost:8000/api/v1/showcase-comments/${commentUuid}`);
+        
+        if (response.data.code === 200) {
+          message.success('评论删除成功');
+          // 重新加载评论列表
+          await fetchShowcaseComments(currentShowcase.value.uuid);
+        } else {
+          message.error('删除评论失败');
+        }
+      } catch (error) {
+        console.error('删除评论失败:', error);
+        message.error('删除评论失败');
+      }
+    }
+  });
+};
+
+// 删除回复
+const deleteCommentReply = (commentUuid, replyUuid) => {
+  Modal.confirm({
+    title: '确认删除回复',
+    content: '确定要删除这条回复吗？此操作不可恢复！',
+    okType: 'danger',
+    onOk: async () => {
+      try {
+        const response = await request.delete(`http://localhost:8000/api/v1/showcase-comment-replies/${replyUuid}`);
+        
+        if (response.data.code === 200) {
+          message.success('回复删除成功');
+          // 重新加载该评论的回复
+          await loadCommentReplies(commentUuid);
+        } else {
+          message.error('删除回复失败');
+        }
+      } catch (error) {
+        console.error('删除回复失败:', error);
+        message.error('删除回复失败');
+      }
+    }
+  });
+};
+
+// 格式化时间
+const formatTime = (timeString) => {
+  if (!timeString) return '-';
+  return new Date(timeString).toLocaleString('zh-CN');
+};
+
+// ==================== 原有方法 ====================
+
 // 监听搜索值变化
 watch(searchValue, (newVal) => {
   if (!newVal) {
@@ -590,11 +833,6 @@ watch(searchValue, (newVal) => {
               </div>
             </div>
           </template>
-          <template v-else-if="column.key === 'status'">
-            <a-tag :color="record.status === 'published' ? 'green' : record.status === 'draft' ? 'orange' : 'gray'">
-              {{ statusOptions.find(s => s.value === record.status)?.label || record.status }}
-            </a-tag>
-          </template>
           <template v-else-if="column.key === 'created_at' || column.key === 'updated_at'">
             {{ new Date(record[column.key]).toLocaleString('zh-CN') }}
           </template>
@@ -606,6 +844,14 @@ watch(searchValue, (newVal) => {
           <template v-else-if="column.key === 'name'">
             <a @click="viewShowcaseDetail(record)">{{ record.name }}</a>
           </template>
+          <template v-else-if="column.key === 'comments_count'">
+            <a-tag color="blue">{{ record.comments_count || 0 }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="getStatusColor(record.status)">
+              {{ getStatusText(record.status) }}
+            </a-tag>
+          </template>
           <template v-else>
             {{ record[column.key] || '-' }}
           </template>
@@ -613,11 +859,43 @@ watch(searchValue, (newVal) => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="280" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewShowcaseDetail(record)">查看</a-button>
+            <a-button size="small" @click="viewShowcaseComments(record)">
+              <template #icon><MessageOutlined /></template>
+              讨论管理
+            </a-button>
             <a-button size="small" type="primary" @click="editShowcase(record)">编辑</a-button>
+            
+            <!-- 设为优秀按钮 -->
+            <a-button 
+              v-if="record.status === 'published'"
+              size="small" 
+              type="primary"
+              @click="promoteToExcellent(record.uuid)"
+            >
+              设为优秀
+            </a-button>
+            
+            <!-- 下架/恢复按钮 -->
+            <a-button 
+              v-if="record.status === 'published' || record.status === 'excellent'"
+              size="small" 
+              @click="archiveShowcase(record.uuid)"
+            >
+              下架
+            </a-button>
+            <a-button 
+              v-if="record.status === 'draft' && record.previous_status"
+              size="small" 
+              type="primary"
+              @click="restoreShowcase(record.uuid)"
+            >
+              恢复
+            </a-button>
+            
             <a-button size="small" danger @click="deleteShowcase(record)">删除</a-button>
           </div>
         </template>
@@ -684,13 +962,6 @@ watch(searchValue, (newVal) => {
             />
           </a-form-item>
           
-          <a-form-item label="状态">
-            <a-select v-model:value="addShowcaseForm.status" placeholder="请选择作品状态">
-              <a-select-option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
           
           <a-form-item label="标签">
             <a-select
@@ -778,13 +1049,6 @@ watch(searchValue, (newVal) => {
             />
           </a-form-item>
           
-          <a-form-item label="状态">
-            <a-select v-model:value="editForm.status" placeholder="请选择作品状态">
-              <a-select-option v-for="option in statusOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </a-select-option>
-            </a-select>
-          </a-form-item>
           
           <a-form-item label="标签">
             <a-select
@@ -872,14 +1136,122 @@ watch(searchValue, (newVal) => {
         
         <div class="detail-section">
           <h4>作品信息</h4>
-          <p>状态: <a-tag :color="showcaseDetail.status === 'published' ? 'green' : showcaseDetail.status === 'draft' ? 'orange' : 'gray'">
-            {{ statusOptions.find(s => s.value === showcaseDetail.status)?.label || showcaseDetail.status }}
-          </a-tag></p>
           <p>浏览数: {{ showcaseDetail.views_count }}</p>
           <p>点赞数: {{ showcaseDetail.likes_count }}</p>
           <p>作者ID: {{ showcaseDetail.author_id }}</p>
           <p>创建时间: {{ new Date(showcaseDetail.created_at).toLocaleString('zh-CN') }}</p>
           <p>更新时间: {{ new Date(showcaseDetail.updated_at).toLocaleString('zh-CN') }}</p>
+        </div>
+      </div>
+    </a-drawer>
+
+    <!-- 讨论管理抽屉 -->
+    <a-drawer
+      v-model:open="commentsDrawerVisible"
+      :title="`${currentShowcase?.name || ''} - 讨论管理`"
+      width="800"
+      :closable="true"
+    >
+      <div class="comments-management">
+        <div class="comments-header">
+          <h4>评论列表 ({{ showcaseComments.length }})</h4>
+        </div>
+        
+        <div v-if="loadingComments" class="loading-container">
+          <a-spin size="large" />
+          <p>加载评论中...</p>
+        </div>
+        
+        <div v-else-if="showcaseComments.length === 0" class="empty-comments">
+          <div class="empty-icon">💬</div>
+          <p>暂无评论</p>
+        </div>
+        
+        <div v-else class="comments-list">
+          <div
+            v-for="comment in showcaseComments"
+            :key="comment.uuid"
+            class="comment-item"
+          >
+            <!-- 评论头部 -->
+            <div class="comment-header">
+              <div class="comment-user">
+                <strong>{{ comment.user?.username || comment.user?.real_name || '匿名用户' }}</strong>
+                <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
+              </div>
+              <div class="comment-actions">
+                <a-button 
+                  size="small"
+                  @click="toggleCommentExpansion(comment.uuid)"
+                  :type="expandedCommentKeys.includes(comment.uuid) ? 'primary' : 'default'"
+                >
+                  <template #icon><EyeOutlined /></template>
+                  {{ expandedCommentKeys.includes(comment.uuid) ? '收起' : '查看详情' }}
+                </a-button>
+                <a-button 
+                  size="small" 
+                  danger
+                  @click="deleteShowcaseComment(comment.uuid)"
+                >
+                  <template #icon><DeleteOutlined /></template>
+                  删除
+                </a-button>
+              </div>
+            </div>
+            
+            <!-- 评论内容 -->
+            <div class="comment-content">
+              <p>{{ comment.content }}</p>
+            </div>
+            
+            <!-- 评论统计 -->
+            <div class="comment-stats">
+              <span>点赞: {{ comment.likes_count || 0 }}</span>
+              <span>回复: {{ (commentReplies[comment.uuid] || []).length }}</span>
+            </div>
+            
+            <!-- 展开的回复区域 -->
+            <div v-if="expandedCommentKeys.includes(comment.uuid)" class="replies-section">
+              <div v-if="loadingReplies.has(comment.uuid)" class="loading-replies">
+                <a-spin size="small" />
+                <span>加载回复中...</span>
+              </div>
+              
+              <div v-else-if="commentReplies[comment.uuid]?.length > 0" class="replies-list">
+                <h5>回复列表 ({{ commentReplies[comment.uuid].length }})</h5>
+                <div
+                  v-for="reply in commentReplies[comment.uuid]"
+                  :key="reply.uuid"
+                  class="reply-item"
+                >
+                  <div class="reply-header">
+                    <div class="reply-user">
+                      <strong>{{ reply.user?.username || reply.user?.real_name || '匿名用户' }}</strong>
+                      <span class="reply-time">{{ formatTime(reply.created_at) }}</span>
+                    </div>
+                    <a-button 
+                      size="small" 
+                      danger
+                      @click="deleteCommentReply(comment.uuid, reply.uuid)"
+                    >
+                      <template #icon><DeleteOutlined /></template>
+                      删除
+                    </a-button>
+                  </div>
+                  <div class="reply-content">
+                    <p>{{ reply.content }}</p>
+                  </div>
+                  <div class="reply-stats">
+                    <span>点赞: {{ reply.likes_count || 0 }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else class="no-replies">
+                <p>暂无回复</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </a-drawer>
@@ -1188,5 +1560,212 @@ watch(searchValue, (newVal) => {
   width: 160px;
   height: 90px;
   object-fit: cover;
+}
+
+/* ==================== 讨论管理样式 ==================== */
+.comments-management {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.comments-header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comments-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  gap: 16px;
+}
+
+.loading-container p {
+  margin: 0;
+  color: #666;
+}
+
+.empty-comments {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.comments-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.comment-item {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+.comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.comment-user {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comment-user strong {
+  color: #262626;
+  font-size: 14px;
+}
+
+.comment-time {
+  color: #999;
+  font-size: 12px;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.comment-content {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 3px solid #1890ff;
+}
+
+.comment-content p {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.comment-stats {
+  display: flex;
+  gap: 16px;
+  color: #666;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.replies-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.loading-replies {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.replies-list h5 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.reply-item {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.reply-item:last-child {
+  margin-bottom: 0;
+}
+
+.reply-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.reply-user {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reply-user strong {
+  color: #262626;
+  font-size: 13px;
+}
+
+.reply-time {
+  color: #999;
+  font-size: 11px;
+}
+
+.reply-content {
+  margin: 8px 0;
+}
+
+.reply-content p {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.reply-stats {
+  color: #666;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+.no-replies {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+  font-style: italic;
+}
+
+.no-replies p {
+  margin: 0;
 }
 </style>

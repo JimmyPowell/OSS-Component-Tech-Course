@@ -146,3 +146,34 @@ def get_current_user_info(
     """
     user_data = schemas.UserResponse.from_orm(current_user).dict()
     return Success(data=user_data)
+
+
+@router.put("/profile")
+def update_user_profile(
+    profile_data: schemas.UserUpdate,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_user_obj)
+):
+    """
+    Update user profile information.
+    """
+    from app.crud import crud_user
+    
+    # 检查用户名是否已存在（如果要更新用户名）
+    if profile_data.username and profile_data.username != current_user.username:
+        existing_user = crud_user.get_user_by_username(db=db, username=profile_data.username)
+        if existing_user:
+            return BadRequest(message="用户名已存在")
+    
+    # 更新用户信息
+    update_data = profile_data.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(current_user, field) and value is not None:
+            setattr(current_user, field, value)
+    
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+    
+    user_data = schemas.UserResponse.from_orm(current_user).dict()
+    return Success(data=user_data, message="个人资料更新成功")

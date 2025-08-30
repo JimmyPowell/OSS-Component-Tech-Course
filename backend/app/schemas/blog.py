@@ -127,6 +127,7 @@ class BlogSummary(BaseModel):
     cover_url: Optional[str] = None
     view_count: int = 0
     like_count: int = 0
+    status: BlogStatus = BlogStatus.published  # 添加状态字段
     created_at: datetime
     author: Optional[BlogAuthor] = None
     tags: Optional[List[BlogTag]] = []

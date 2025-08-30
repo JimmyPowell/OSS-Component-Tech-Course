@@ -98,7 +98,7 @@ class CRUDBlog(CRUDBase[Blog, BlogCreate, BlogUpdate]):
         ).order_by(desc(Blog.created_at)).offset(skip).limit(limit).all()
 
     def search(
-        self, db: Session, *, search_params: BlogSearchRequest
+        self, db: Session, *, search_params: BlogSearchRequest, admin_access: bool = False
     ) -> tuple[List[Blog], int]:
         """搜索Blog文章"""
         query = db.query(Blog).filter(Blog.is_deleted == False)
@@ -106,6 +106,9 @@ class CRUDBlog(CRUDBase[Blog, BlogCreate, BlogUpdate]):
         # 状态筛选
         if search_params.status:
             query = query.filter(Blog.status == search_params.status)
+        elif not admin_access:
+            # 非管理员访问时，默认只显示已发布的博客
+            query = query.filter(Blog.status == BlogStatus.published)
         
         # 作者筛选
         if search_params.author_id:

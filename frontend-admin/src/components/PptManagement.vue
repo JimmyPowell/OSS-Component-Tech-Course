@@ -72,6 +72,7 @@ const availableColumns = [
   { key: 'name', title: '课件名称', visible: true },
   { key: 'uuid', title: '课件编号', visible: false },
   { key: 'description', title: '课件描述', visible: true },
+  { key: 'status', title: '状态', visible: true },
   { key: 'file_size', title: '文件大小', visible: true },
   { key: 'download_count', title: '下载次数', visible: true },
   { key: 'creator_id', title: '发布者ID', visible: false },
@@ -83,7 +84,13 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/course-resources';
+const API_BASE_URL = 'http://localhost:8000/api/v1/admin/course-resources';
+
+// 状态选项
+const statusOptions = [
+  { label: '未发布', value: 'draft' },
+  { label: '已发布', value: 'published' }
+];
 
 const fetchResources = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -1101,6 +1108,37 @@ onMounted(() => {
   }
 });
 
+// 切换课件状态
+const toggleResourceStatus = async (uuid, currentStatus) => {
+  const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+  const statusText = newStatus === 'published' ? '发布' : '下架';
+  
+  Modal.confirm({
+    title: `确认${statusText}课件`,
+    content: `确定要${statusText}这个课件吗？`,
+    onOk: async () => {
+      try {
+        const response = await request.put(`${API_BASE_URL}/${uuid}/status`, {
+          status: newStatus
+        });
+        
+        if (response.data.code === 200) {
+          message.success(`课件${statusText}成功`);
+          refreshList();
+        } else {
+          message.error(response.data.message || `${statusText}失败`);
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${statusText}课件失败`);
+        }
+      }
+    }
+  });
+};
+
 // 高度只需要监听窗口变化，不需要监听数据变化
 
 onUnmounted(() => {
@@ -1173,6 +1211,11 @@ onUnmounted(() => {
               </div>
             </div>
           </template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="record.status === 'published' ? 'green' : 'orange'">
+              {{ statusOptions.find(s => s.value === record.status)?.label || record.status }}
+            </a-tag>
+          </template>
           <template v-else-if="column.key === 'file_size'">
             {{ formatFileSize(record.file_size) }}
           </template>
@@ -1191,11 +1234,19 @@ onUnmounted(() => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="280" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewResource(record.uuid)">查看</a-button>
             <a-button size="small" type="primary" @click="editResource(record.uuid)">编辑</a-button>
+            <a-button 
+              size="small" 
+              :type="record.status === 'published' ? 'default' : 'primary'"
+              @click="toggleResourceStatus(record.uuid, record.status)"
+              style="margin-right: 4px;"
+            >
+              {{ record.status === 'published' ? '下架' : '发布' }}
+            </a-button>
             <a-button size="small" danger @click="deleteResource(record.uuid)">删除</a-button>
           </div>
         </template>

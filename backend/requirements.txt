@@ -11,3 +11,5 @@ email-validator
 fastapi-mail
 python-multipart
 qiniu
+pandas
+openpyxl

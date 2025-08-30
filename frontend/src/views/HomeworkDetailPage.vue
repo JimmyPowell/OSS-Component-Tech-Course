@@ -45,14 +45,14 @@
         <div class="homework-section" v-if="homeworkDetail.description">
           <h3 class="section-title">作业描述</h3>
           <div class="section-text">
-            <p>{{ homeworkDetail.description }}</p>
+            <div v-html="processTextContent(homeworkDetail.description)"></div>
           </div>
         </div>
         
         <div class="homework-section" v-if="homeworkDetail.content">
           <h3 class="section-title">详细内容</h3>
           <div class="section-text">
-            <p>{{ homeworkDetail.content }}</p>
+            <div v-html="processTextContent(homeworkDetail.content)"></div>
           </div>
         </div>
         
@@ -71,6 +71,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getHomeworkDetail, formatDuration, formatDate } from '@/api/homework.js';
+import { processTextContent } from '@/utils/linkUtils.js';
 
 const route = useRoute();
 const homeworkDetail = ref(null);
@@ -276,6 +277,21 @@ onMounted(() => {
   margin: 0;
   font-size: 16px;
   text-align: justify;
+}
+
+/* 链接样式 */
+:deep(.content-link) {
+  color: #5277ff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid transparent;
+}
+
+:deep(.content-link:hover) {
+  color: #4165ee;
+  border-bottom-color: #4165ee;
+  text-decoration: none;
 }
 
 /* 操作按钮区域 */

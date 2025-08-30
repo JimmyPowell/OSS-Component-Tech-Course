@@ -57,6 +57,7 @@ const availableColumns = [
   { key: 'name', title: '公告标题', visible: true },
   { key: 'uuid', title: '公告编号', visible: false },
   { key: 'summary', title: '摘要', visible: true },
+  { key: 'status', title: '状态', visible: true },
   { key: 'publisher_id', title: '发布者ID', visible: false },
   { key: 'created_at', title: '发布时间', visible: true },
   { key: 'updated_at', title: '更新时间', visible: false }
@@ -67,6 +68,12 @@ const columnSettings = reactive([...availableColumns]);
 const tableHeight = ref(600);
 
 const API_BASE_URL = 'http://localhost:8000/api/v1/admin/announcements';
+
+// 状态选项
+const statusOptions = [
+  { label: '未发布', value: 'draft' },
+  { label: '已发布', value: 'published' }
+];
 
 const fetchAnnouncements = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -496,6 +503,37 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateTableHeight);
 });
 
+// 切换公告状态
+const toggleAnnouncementStatus = async (uuid, currentStatus) => {
+  const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+  const statusText = newStatus === 'published' ? '发布' : '下架';
+  
+  Modal.confirm({
+    title: `确认${statusText}公告`,
+    content: `确定要${statusText}这个公告吗？`,
+    onOk: async () => {
+      try {
+        const response = await request.put(`${API_BASE_URL}/${uuid}/status`, {
+          status: newStatus
+        });
+        
+        if (response.data.code === 200) {
+          message.success(`公告${statusText}成功`);
+          refreshList();
+        } else {
+          message.error(response.data.message || `${statusText}失败`);
+        }
+      } catch (error) {
+        if (error.response?.data?.message) {
+          message.error(error.response.data.message);
+        } else {
+          message.error(`${statusText}公告失败`);
+        }
+      }
+    }
+  });
+};
+
 // 监听搜索值变化（可选：实现实时搜索）
 watch(searchValue, (newVal) => {
   if (!newVal) {
@@ -579,6 +617,11 @@ watch(searchValue, (newVal) => {
           <template v-else-if="column.key === 'name'">
             <a @click="viewAnnouncementDetail(record)">{{ record.name }}</a>
           </template>
+          <template v-else-if="column.key === 'status'">
+            <a-tag :color="record.status === 'published' ? 'green' : 'orange'">
+              {{ statusOptions.find(s => s.value === record.status)?.label || record.status }}
+            </a-tag>
+          </template>
           <template v-else>
             {{ record[column.key] || '-' }}
           </template>
@@ -586,11 +629,19 @@ watch(searchValue, (newVal) => {
       </a-table-column>
       
       <!-- 操作列 -->
-      <a-table-column key="action" title="操作" width="200" fixed="right">
+      <a-table-column key="action" title="操作" width="260" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
             <a-button size="small" @click="viewAnnouncementDetail(record)">查看</a-button>
             <a-button size="small" type="primary" @click="editAnnouncement(record)">编辑</a-button>
+            <a-button 
+              size="small" 
+              :type="record.status === 'published' ? 'default' : 'primary'"
+              @click="toggleAnnouncementStatus(record.uuid, record.status)"
+              style="margin-right: 4px;"
+            >
+              {{ record.status === 'published' ? '下架' : '发布' }}
+            </a-button>
             <a-button size="small" danger @click="deleteAnnouncement(record)">删除</a-button>
           </div>
         </template>

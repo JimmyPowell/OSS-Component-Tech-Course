@@ -96,7 +96,8 @@ def search_blogs(
         size=size
     )
     
-    blogs, total = crud_blog.search(db, search_params=search_params)
+    # 用户端搜索，只显示已发布的博客
+    blogs, total = crud_blog.search(db, search_params=search_params, admin_access=False)
     
     # 转换为摘要格式
     blog_summaries = []
@@ -109,6 +110,7 @@ def search_blogs(
             cover_url=blog.cover_url,
             view_count=blog.view_count,
             like_count=blog.like_count,
+            status=blog.status,  # 添加状态字段
             created_at=blog.created_at,
             author={
                 "id": blog.author.id,
@@ -159,6 +161,7 @@ def get_blogs(
             cover_url=blog.cover_url,
             view_count=blog.view_count,
             like_count=blog.like_count,
+            status=blog.status,  # 添加状态字段
             created_at=blog.created_at,
             author={
                 "id": blog.author.id,
@@ -329,3 +332,77 @@ def get_blogs_by_author(
             blog_summaries.append(summary)
     
     return success_response(data=blog_summaries)
+
+
+@router.get("/admin/search", response_model=BlogListResponse)
+def admin_search_blogs(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_user_obj),
+    keyword: str = Query(None, description="搜索关键词"),
+    tag_ids: List[int] = Query([], description="标签ID列表"),
+    author_id: int = Query(None, description="作者ID"),
+    status: Optional[str] = Query(None, description="文章状态"),
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(10, ge=1, le=50, description="每页大小")
+) -> Any:
+    """管理员搜索Blog文章（可查看所有状态）"""
+    # 检查管理员权限
+    if current_user.role != "manager":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="没有权限访问管理员接口"
+        )
+    
+    search_params = BlogSearchRequest(
+        keyword=keyword,
+        tag_ids=tag_ids,
+        author_id=author_id,
+        status=status,
+        page=page,
+        size=size
+    )
+    
+    # 管理员搜索，可查看所有状态的博客
+    blogs, total = crud_blog.search(db, search_params=search_params, admin_access=True)
+    
+    # 转换为摘要格式
+    blog_summaries = []
+    for blog in blogs:
+        summary = BlogSummary(
+            id=blog.id,
+            uuid=blog.uuid,
+            title=blog.title,
+            summary=blog.summary,
+            cover_url=blog.cover_url,
+            view_count=blog.view_count,
+            like_count=blog.like_count,
+            status=blog.status,
+            created_at=blog.created_at,
+            author={
+                "id": blog.author.id,
+                "uuid": blog.author.uuid,
+                "username": blog.author.username,
+                "real_name": blog.author.real_name,
+                "avatar_url": blog.author.avatar_url
+            } if blog.author else None,
+            tags=[{
+                "id": tag.id,
+                "name": tag.name,
+                "color": tag.color,
+                "description": tag.description,
+                "created_at": tag.created_at,
+                "blog_count": tag.blog_count
+            } for tag in blog.tags] if blog.tags else []
+        )
+        blog_summaries.append(summary)
+    
+    response_data = BlogListResponse(
+        items=blog_summaries,
+        total=total,
+        page=page,
+        size=size,
+        pages=math.ceil(total / size) if size > 0 else 0
+    )
+    
+    return success_response(data=response_data)

@@ -18,7 +18,7 @@ const props = defineProps({
   message: String,
   type: {
     type: String,
-    default: 'success' // success, error
+    default: 'success' // success, error, info
   },
   duration: {
     type: Number,
@@ -31,7 +31,8 @@ const isVisible = ref(false)
 const iconClass = computed(() => {
   return {
     'success': 'iconfont icon-check-circle',
-    'error': 'iconfont icon-close-circle'
+    'error': 'iconfont icon-close-circle',
+    'info': 'iconfont icon-info-circle'
   }[props.type]
 })
 
@@ -66,6 +67,10 @@ defineExpose({ show })
 
 .notification-container.error {
   background-color: #f56565;
+}
+
+.notification-container.info {
+  background-color: #4299e1;
 }
 
 .notification-content {

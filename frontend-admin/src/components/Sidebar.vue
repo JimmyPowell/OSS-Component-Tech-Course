@@ -63,13 +63,17 @@ const menuItems = ref([
     children: [
       { key: '/showcase', title: '作品管理', icon: ProjectOutlined },
       { key: '/showcase-review', title: '作品审核', icon: FormOutlined },
+      { key: '/showcase-discussions', title: '作品讨论管理', icon: CommentOutlined },
     ],
   },
   {
     key: 'forum',
     title: '论坛内容管理',
     icon: CommentOutlined,
-    children: [{ key: '/forum', title: '论坛内容管理', icon: CommentOutlined }],
+    children: [
+      { key: '/forum', title: '论坛分类管理', icon: CommentOutlined },
+      { key: '/forum-posts', title: '论坛帖子管理', icon: FileTextOutlined },
+    ],
   },
   {
     key: 'announcements',

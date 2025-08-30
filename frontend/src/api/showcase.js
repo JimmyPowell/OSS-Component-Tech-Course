@@ -6,6 +6,11 @@ export const showcaseAPI = {
     return apiClient.get('/showcases/', { params })
   },
 
+  // 获取前端展示的作品列表（仅精品和优秀作品）
+  getFrontendShowcases(params = {}) {
+    return apiClient.get('/showcases/frontend', { params })
+  },
+
   // 根据UUID获取作品详情
   getShowcaseByUuid(uuid) {
     return apiClient.get(`/showcases/${uuid}`)

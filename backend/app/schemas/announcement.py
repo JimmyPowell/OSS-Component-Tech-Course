@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 import uuid
+from app.models.announcement import AnnouncementStatus
 
 class AnnouncementBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -28,6 +29,9 @@ class AnnouncementInDB(AnnouncementBase):
     class Config:
         from_attributes = True
 
+class AnnouncementStatusUpdate(BaseModel):
+    status: AnnouncementStatus
+
 class AnnouncementResponse(BaseModel):
     uuid: str
     name: str
@@ -35,6 +39,7 @@ class AnnouncementResponse(BaseModel):
     detail_info: Optional[str]
     cover_url: Optional[str]
     publisher_id: int
+    status: AnnouncementStatus
     created_at: datetime
     updated_at: datetime
 

@@ -1,7 +1,9 @@
 <template>
   <div class="page">
     <div class="container">
-      <div class="page-title">优秀作品展示</div>
+      <div class="page-header">
+        <div class="page-title">优秀作品展示</div>
+      </div>
       
       <!-- Loading state -->
       <div v-if="loading" class="loading-state flex-center">
@@ -133,10 +135,9 @@ const visiblePages = computed(() => {
 const fetchShowcases = async () => {
   try {
     loading.value = true
-    const response = await showcaseAPI.getShowcases({
+    const response = await showcaseAPI.getFrontendShowcases({
       skip: (currentPage.value - 1) * pageSize.value,
-      limit: pageSize.value,
-      status: 'published' // 只显示已发布的作品
+      limit: pageSize.value
     })
     
     console.log('API响应:', response)
@@ -212,6 +213,45 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 页面头部样式 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.page-title {
+  margin: 0;
+}
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #007bff;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.submit-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+  color: #fff;
+  text-decoration: none;
+}
+
+.submit-icon {
+  font-size: 18px;
+}
+
 .loading-state {
   min-height: 300px;
   flex-direction: column;
@@ -284,5 +324,20 @@ onMounted(() => {
 
 .card-title a:hover {
   color: #007bff;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .submit-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
 }
 </style>

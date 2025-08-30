@@ -60,14 +60,44 @@
             <h3 class="section-title">
               回复 ({{ getTotalRepliesCount(replies) }})
             </h3>
-            <button 
-              v-if="!post.is_locked"
-              @click="showReplyForm = !showReplyForm"
-              class="btn-reply"
-            >
-              <i class="icon">💬</i>
-              {{ showReplyForm ? '取消回复' : '回复讨论' }}
-            </button>
+            <div class="header-actions">
+              <div class="sort-dropdown" ref="sortDropdown" :class="{ open: showSortDropdown }">
+                <div 
+                  class="custom-select"
+                  @click="toggleSortDropdown"
+                  :class="{ active: showSortDropdown }"
+                >
+                  <span class="selected-text">{{ getSortText(sortConfig) }}</span>
+                  <i class="iconfont icon-down dropdown-icon" :class="{ rotated: showSortDropdown }"></i>
+                </div>
+                <div class="dropdown-menu" v-if="showSortDropdown">
+                  <div 
+                    class="dropdown-item"
+                    :class="{ active: sortConfig === 'created_at_desc' }"
+                    @click="selectSort('created_at_desc')"
+                  >
+                    <i class="iconfont icon-time"></i>
+                    <span>最新回复</span>
+                  </div>
+                  <div 
+                    class="dropdown-item"
+                    :class="{ active: sortConfig === 'created_at_asc' }"
+                    @click="selectSort('created_at_asc')"
+                  >
+                    <i class="iconfont icon-time"></i>
+                    <span>最早回复</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                v-if="!post.is_locked"
+                @click="showReplyForm = !showReplyForm"
+                class="btn-reply btn-reply-large"
+              >
+                <i class="icon">💬</i>
+                {{ showReplyForm ? '取消回复' : '回复讨论' }}
+              </button>
+            </div>
           </div>
 
           <!-- 回复表单 -->
@@ -76,15 +106,15 @@
               <textarea 
                 v-model="replyContent"
                 placeholder="写下你的回复..."
-                class="reply-textarea"
-                rows="4"
+                class="reply-textarea reply-textarea-large"
+                rows="6"
                 required
               ></textarea>
               <div class="reply-actions">
-                <button type="button" @click="showReplyForm = false" class="btn-cancel">
+                <button type="button" @click="showReplyForm = false" class="btn-cancel btn-large">
                   取消
                 </button>
-                <button type="submit" :disabled="submittingReply" class="btn-submit">
+                <button type="submit" :disabled="submittingReply" class="btn-submit btn-large">
                   {{ submittingReply ? '发布中...' : '发布回复' }}
                 </button>
               </div>
@@ -93,26 +123,19 @@
 
           <!-- Discord风格回复列表 -->
           <div class="replies-list discord-style">
-            <template v-for="reply in replies" :key="reply.uuid">
-              <DiscordReplyItem 
-                :reply="reply" 
-                :level="0"
-                :parent-instance="{ 
-                  formatTime, 
-                  formatContent, 
-                  showNestedReplyForm, 
-                  nestedReplyContent, 
-                  submittingReply, 
-                  authStore,
-                  showNestedReplyToReply,
-                  submitReply
-                }"
-              />
-            </template>
+            <DiscordReplyItem 
+              v-for="reply in flatReplies" 
+              :key="reply.uuid"
+              :reply="reply" 
+              :level="0"
+              :max-level="5"
+              :parent-methods="parentMethods"
+              :auth-store="authStore"
+            />
           </div>
 
           <!-- 空状态 -->
-          <div v-if="replies.length === 0" class="empty-replies">
+          <div v-if="flatReplies.length === 0" class="empty-replies">
             <div class="empty-icon">💭</div>
             <p>暂无回复，成为第一个回复的人吧！</p>
           </div>
@@ -132,10 +155,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { message } from 'ant-design-vue'
 import { useAuthStore } from '../stores/auth'
 import { forumApi } from '../api/forum'
+import DiscordReplyItem from '../components/forum/DiscordReplyItem.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -143,7 +168,9 @@ const authStore = useAuthStore()
 
 // 响应式数据
 const post = ref(null)
-const replies = ref([])
+const replies = ref([]) // 树形结构的回复数据
+const flatReplies = ref([]) // 扁平化的回复列表用于显示
+const expandedReplies = ref(new Set()) // 记录展开的回复ID
 const replyingTo = ref(null) // 记录当前回复的对象
 const loading = ref(false)
 const showReplyForm = ref(false)
@@ -151,6 +178,11 @@ const showNestedReplyForm = ref({}) // 记录嵌套回复表单状态
 const nestedReplyContent = ref({}) // 记录嵌套回复内容
 const replyContent = ref('')
 const submittingReply = ref(false)
+
+// 排序相关状态
+const sortConfig = ref('created_at_desc')
+const showSortDropdown = ref(false)
+const sortDropdown = ref(null)
 
 // 返回上一页
 const goBack = () => {
@@ -178,23 +210,82 @@ const fetchReplies = async () => {
   try {
     const response = await forumApi.reply.getRepliesTree(post.value.uuid)
     replies.value = response.data.data || []
+    // 转换为扁平化列表用于显示，使用当前排序配置
+    flatReplies.value = flattenReplies(replies.value, sortConfig.value)
   } catch (error) {
     console.error('获取回复失败:', error)
     replies.value = []
+    flatReplies.value = []
   }
 }
 
-// 提交回复
-const submitReply = async (isNested = false, replyId = null) => {
+// 将树形回复结构转换为扁平化列表（支持动态排序）
+const flattenReplies = (repliesList, sortBy = 'created_at_desc') => {
+  const flatList = []
+  
+  const collectReplies = (replies) => {
+    replies.forEach(reply => {
+      // 添加当前回复到扁平列表
+      flatList.push({
+        ...reply,
+        hasChildren: reply.children && reply.children.length > 0,
+        childrenData: reply.children || [] // 保存子回复数据用于展开功能
+      })
+      
+      // 递归收集子回复
+      if (reply.children && reply.children.length > 0) {
+        collectReplies(reply.children)
+      }
+    })
+  }
+  
+  collectReplies(repliesList)
+  
+  // 根据配置进行排序
+  return sortReplies(flatList, sortBy)
+}
+
+// 排序回复列表
+const sortReplies = (repliesList, sortBy) => {
+  return repliesList.sort((a, b) => {
+    switch (sortBy) {
+      case 'created_at_asc':
+        return new Date(a.created_at) - new Date(b.created_at)
+      case 'created_at_desc':
+      default:
+        return new Date(b.created_at) - new Date(a.created_at)
+    }
+  })
+}
+
+// 切换回复展开状态
+const toggleReplyExpanded = (replyUuid) => {
+  if (expandedReplies.value.has(replyUuid)) {
+    expandedReplies.value.delete(replyUuid)
+  } else {
+    expandedReplies.value.add(replyUuid)
+  }
+  // 强制响应式更新
+  expandedReplies.value = new Set(expandedReplies.value)
+}
+
+// 获取某个回复的子回复列表（用于展开显示）
+const getChildrenForReply = (replyUuid) => {
+  const reply = flatReplies.value.find(r => r.uuid === replyUuid)
+  return reply ? reply.childrenData : []
+}
+
+// 提交回复内部实现
+const submitReplyInternal = async (isNested = false, replyId = null, content = null) => {
   if (!authStore.isAuthenticated) {
-    alert('请先登录后再回复')
+    message.warning('请先登录后再回复')
     authStore.showLoginModal()
     return
   }
   
-  const content = isNested ? nestedReplyContent.value[replyId] : replyContent.value
-  if (!content || !content.trim()) {
-    alert('请输入回复内容')
+  const replyContentText = content || (isNested ? nestedReplyContent.value[replyId] : replyContent.value)
+  if (!replyContentText || !replyContentText.trim()) {
+    message.warning('请输入回复内容')
     return
   }
   
@@ -203,14 +294,14 @@ const submitReply = async (isNested = false, replyId = null) => {
   try {
     const replyData = {
       post_id: post.value.id,
-      content: content.trim()
+      content: replyContentText.trim()
     }
     
     // 如果是嵌套回复，设置parent_id和reply_to_user_id
     if (isNested && replyId) {
       const parentReply = findReplyById(replies.value, replyId)
       if (parentReply) {
-        replyData.parent_id = findReplyParentId(replies.value, replyId)
+        replyData.parent_id = parentReply.id  // 直接使用被回复评论的ID作为parent_id
         replyData.reply_to_user_id = parentReply.user_id
       }
     }
@@ -233,19 +324,24 @@ const submitReply = async (isNested = false, replyId = null) => {
       post.value.reply_count = (post.value.reply_count || 0) + 1
     }
     
-    alert('回复成功！')
+    message.success('回复成功！')
   } catch (error) {
     console.error('回复失败:', error)
     
     if (error.response?.status === 401) {
-      alert('登录已过期，请重新登录')
+      message.error('登录已过期，请重新登录')
       authStore.showLoginModal()
     } else {
-      alert('回复失败，请稍后重试')
+      message.error('回复失败，请稍后重试')
     }
   } finally {
     submittingReply.value = false
   }
+}
+
+// 原始的submitReply函数（兼容现有调用）
+const submitReply = async (isNested = false, replyId = null) => {
+  return submitReplyInternal(isNested, replyId)
 }
 
 // 格式化内容（简单的Markdown解析）
@@ -292,7 +388,7 @@ const findReplyParentId = (repliesList, replyId) => {
 // 显示嵌套回复表单
 const showNestedReplyToReply = (replyId) => {
   if (!authStore.isAuthenticated) {
-    alert('请先登录后再回复')
+    message.warning('请先登录后再回复')
     authStore.showLoginModal()
     return
   }
@@ -344,110 +440,58 @@ const getTotalRepliesCount = (repliesList) => {
   return count
 }
 
+// 父组件方法对象
+const parentMethods = {
+  formatTime,
+  formatContent,
+  submitReply: async (isNested = false, replyId = null, content = null) => {
+    return submitReplyInternal(isNested, replyId, content)
+  },
+  toggleReplyExpanded,
+  getChildrenForReply,
+  isReplyExpanded: (replyUuid) => expandedReplies.value.has(replyUuid)
+}
+
+// 排序相关方法
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value
+}
+
+const selectSort = (value) => {
+  if (value !== sortConfig.value) {
+    sortConfig.value = value
+    // 重新应用排序到现有数据
+    flatReplies.value = flattenReplies(replies.value, sortConfig.value)
+  }
+  showSortDropdown.value = false
+}
+
+const getSortText = (value) => {
+  const sortTexts = {
+    'created_at_desc': '最新回复',
+    'created_at_asc': '最早回复'
+  }
+  return sortTexts[value] || '最新回复'
+}
+
+// 处理点击外部关闭下拉菜单
+const handleClickOutside = (event) => {
+  if (sortDropdown.value && !sortDropdown.value.contains(event.target)) {
+    showSortDropdown.value = false
+  }
+}
+
 onMounted(async () => {
   await fetchPost()
   if (post.value) {
     await fetchReplies()
   }
+  document.addEventListener('click', handleClickOutside)
 })
 
-</script>
-
-<script>
-// 递归回复组件定义
-const DiscordReplyItem = {
-  name: 'DiscordReplyItem',
-  props: ['reply', 'level', 'parentInstance'],
-  template: `
-    <div class="discord-reply-thread">
-      <div class="discord-reply-item" :class="{ 'has-children': reply.children && reply.children.length > 0 }">
-        <div class="reply-connector" v-if="level > 0"></div>
-        
-        <div class="reply-main">
-          <div class="reply-author-avatar">
-            <img 
-              :src="reply.author?.avatar_url || '/images/head.png'" 
-              alt="头像"
-              class="avatar"
-            >
-          </div>
-          
-          <div class="reply-content-wrapper">
-            <div v-if="reply.reply_to_user && reply.reply_to_user.id !== reply.author?.id" class="reply-reference">
-              <i class="bi bi-reply"></i>
-              <span class="reply-to-user">{{ reply.reply_to_user.username || reply.reply_to_user.real_name }}</span>
-            </div>
-            
-            <div class="reply-header">
-              <span class="author-name">{{ reply.author?.username || reply.author?.real_name }}</span>
-              <span class="reply-time">{{ parentInstance.formatTime(reply.created_at) }}</span>
-              <span v-if="reply.floor_number" class="floor-number">#{{ reply.floor_number }}</span>
-            </div>
-            
-            <div class="reply-body" v-html="parentInstance.formatContent(reply.content)"></div>
-            
-            <div class="reply-actions">
-              <button 
-                @click="parentInstance.showNestedReplyToReply(reply.uuid)" 
-                class="btn-reply"
-                v-if="!parentInstance.showNestedReplyForm[reply.uuid]"
-              >
-                <i class="bi bi-reply"></i> 回复
-              </button>
-              
-              <span v-if="reply.children && reply.children.length > 0" class="replies-count">
-                {{ reply.children.length }} 个回复
-              </span>
-            </div>
-            
-            <div v-if="parentInstance.showNestedReplyForm[reply.uuid]" class="discord-reply-form">
-              <form @submit.prevent="parentInstance.submitReply(true, reply.uuid)">
-                <div class="form-header">
-                  <img :src="parentInstance.authStore.user?.avatar_url || '/images/head.png'" alt="我的头像" class="my-avatar">
-                  <span class="replying-to">回复 {{ reply.author?.username || reply.author?.real_name }}</span>
-                </div>
-                <textarea 
-                  v-model="parentInstance.nestedReplyContent[reply.uuid]"
-                  placeholder="输入你的回复..."
-                  class="reply-textarea"
-                  rows="3"
-                  required
-                ></textarea>
-                <div class="form-actions">
-                  <button type="button" @click="parentInstance.showNestedReplyToReply(reply.uuid)" class="btn-cancel">
-                    取消
-                  </button>
-                  <button type="submit" :disabled="parentInstance.submittingReply" class="btn-send">
-                    {{ parentInstance.submittingReply ? '发送中...' : '发送' }}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div v-if="reply.children && reply.children.length > 0" class="discord-children-replies">
-        <DiscordReplyItem 
-          v-for="childReply in reply.children" 
-          :key="childReply.uuid"
-          :reply="childReply"
-          :level="level + 1"
-          :parent-instance="parentInstance"
-        />
-      </div>
-    </div>
-  `,
-  components: {
-    DiscordReplyItem: () => DiscordReplyItem
-  }
-}
-
-export default {
-  components: {
-    DiscordReplyItem
-  }
-}
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
@@ -657,6 +701,112 @@ export default {
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 排序筛选器样式 */
+.sort-dropdown {
+  position: relative;
+}
+
+.custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 40px;
+  background-color: #fff;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.custom-select:hover {
+  border-color: #5865f2;
+  box-shadow: 0 2px 8px rgba(88, 101, 242, 0.15);
+}
+
+.custom-select.active {
+  border-color: #5865f2;
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.1);
+}
+
+.selected-text {
+  font-weight: 500;
+  color: #333;
+}
+
+.dropdown-icon {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid #e1e5e9;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #333;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9ff;
+  color: #5865f2;
+}
+
+.dropdown-item.active {
+  background-color: #5865f2;
+  color: white;
+}
+
+.dropdown-item.active:hover {
+  background-color: #4752c4;
+}
+
+.dropdown-item i {
+  margin-right: 8px;
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.dropdown-item span {
+  font-weight: 500;
+}
+
 .btn-reply {
   background: linear-gradient(135deg, #5865f2, #7289da);
   color: white;
@@ -674,6 +824,17 @@ export default {
 
 .btn-reply:hover {
   background: linear-gradient(135deg, #4752c4, #677bc4);
+}
+
+/* 大尺寸回复按钮 */
+.btn-reply-large {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  border-radius: 8px;
+}
+
+.btn-reply-large .icon {
+  font-size: 1.25rem;
 }
 
 .reply-form {
@@ -699,6 +860,15 @@ export default {
   outline: none;
   border-color: #5865f2;
   box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.1);
+}
+
+/* 大尺寸回复输入框 */
+.reply-textarea-large {
+  padding: 1rem;
+  font-size: 1.125rem;
+  border-radius: 8px;
+  line-height: 1.6;
+  min-height: 150px;
 }
 
 .reply-actions {
@@ -744,6 +914,22 @@ export default {
 .btn-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* 大尺寸按钮 */
+.btn-large {
+  padding: 0.5rem 1.25rem !important;
+  font-size: 0.9375rem !important;
+  border-radius: 6px !important;
+}
+
+/* 确保提交按钮的大尺寸样式正确应用 */
+.btn-submit.btn-large {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9375rem;
+  border-radius: 6px;
+  min-width: 100px;
+  font-weight: 600;
 }
 
 /* Discord风格回复列表 */
@@ -1038,6 +1224,17 @@ export default {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .custom-select {
+    width: 100%;
+    min-width: auto;
   }
   
   .reply-item {

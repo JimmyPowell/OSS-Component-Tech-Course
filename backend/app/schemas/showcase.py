@@ -22,6 +22,9 @@ class ShowcaseStatus(str, Enum):
     published = "published"
     rejected = "rejected"
     archived = "archived"
+    approved = "approved"
+    featured = "featured"
+    excellent = "excellent"
 
 class ShowcaseBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -94,3 +97,9 @@ class ShowcaseReviewRequest(BaseModel):
 class PaginatedShowcaseResponse(BaseModel):
     total: int
     items: List[ShowcaseResponse]
+
+
+class ShowcasePromotionRequest(BaseModel):
+    """作品状态提升请求"""
+    action: str = Field(..., pattern="^(approved|featured|excellent)$", description="提升的目标状态")
+    review_comment: Optional[str] = Field(None, description="评审备注")

@@ -10,6 +10,7 @@ from app.schemas.announcement import (
     AnnouncementCreate,
     AnnouncementUpdate,
     AnnouncementResponse,
+    AnnouncementStatusUpdate,
 )
 from app.utils.response import Success, NotFound, BadRequest
 
@@ -63,6 +64,7 @@ def read_announcements_admin(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="状态过滤：draft, published"),
     start_time: Optional[datetime] = Query(None),
     end_time: Optional[datetime] = Query(None),
 ):
@@ -74,6 +76,7 @@ def read_announcements_admin(
         skip=skip,
         limit=limit,
         name=name,
+        status=status,
         start_time=start_time,
         end_time=end_time,
     )
@@ -89,9 +92,9 @@ def read_announcements(
     end_time: Optional[datetime] = Query(None),
 ):
     """
-    Retrieve announcements with pagination and filtering.
+    Retrieve published announcements with pagination and filtering.
     """
-    total, announcements = crud_announcement.get_multi(
+    total, announcements = crud_announcement.get_published(
         db,
         skip=skip,
         limit=limit,
@@ -199,3 +202,28 @@ def delete_announcement(
         return NotFound(message="Announcement not found")
     announcement = crud_announcement.remove_announcement(db=db, db_obj=announcement)
     return Success(data=AnnouncementResponse.from_orm(announcement).model_dump())
+
+
+# 管理员公告状态切换端点
+@admin_router.put("/{uuid}/status")
+def update_announcement_status(
+    *,
+    db: Session = Depends(deps.get_db),
+    uuid: str,
+    status_update: AnnouncementStatusUpdate,
+    current_user: User = Depends(deps.get_current_manager_user),
+):
+    """
+    Update announcement status (Manager only).
+    """
+    announcement = crud_announcement.get_announcement_by_uuid(db=db, uuid=uuid)
+    if not announcement:
+        return NotFound(message="Announcement not found")
+    
+    announcement = crud_announcement.update_status(db=db, db_obj=announcement, status=status_update.status.value)
+    
+    status_text = "已发布" if status_update.status.value == "published" else "未发布"
+    return Success(
+        data=AnnouncementResponse.from_orm(announcement).model_dump(),
+        message=f"公告状态已更新为：{status_text}"
+    )
