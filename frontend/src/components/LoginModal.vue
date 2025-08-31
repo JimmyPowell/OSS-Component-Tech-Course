@@ -35,7 +35,7 @@
               type="success"
               :duration="3000"
             />
-            <form @submit.prevent="handleLogin">
+            <div class="login-form">
               <div class="form-group">
                 <label for="username" class="form-label">邮箱/用户名/学号</label>
                 <div class="input-wrapper">
@@ -90,7 +90,7 @@
                 <span v-if="isLoading" class="loading-spinner"></span>
                 {{ isLoading ? '登录中...' : '登录' }}
               </button>
-            </form>
+            </div>
             
 
             
@@ -213,9 +213,8 @@ const handleLogin = async () => {
         if (redirectPath) {
           router.push(redirectPath)
           authStore.hideLoginModal() // 清除重定向路径
-        } else {
-          router.push('/')
         }
+        // 注意：只有登录成功时才进行路由跳转，这里不需要else分支
       }, 1200)
     } else {
       // 登录失败显示错误通知

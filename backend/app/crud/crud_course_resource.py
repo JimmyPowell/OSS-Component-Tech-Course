@@ -25,6 +25,17 @@ def get_by_name(db: Session, *, name: str) -> Optional[CourseResource]:
     return db.query(CourseResource).filter(CourseResource.name == name, CourseResource.deleted_at.is_(None)).first()
 
 
+def get_by_name_and_type(db: Session, *, name: str, resource_type: str) -> Optional[CourseResource]:
+    """
+    检查同类型下是否存在同名资源
+    """
+    return db.query(CourseResource).filter(
+        CourseResource.name == name,
+        CourseResource.type == resource_type,
+        CourseResource.deleted_at.is_(None)
+    ).first()
+
+
 def get_multi(
     db: Session,
     *,

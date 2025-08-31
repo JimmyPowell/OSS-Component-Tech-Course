@@ -129,7 +129,8 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     
     // 处理401未授权错误 (令牌失效或过期)
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // 但是要排除登录请求的401错误，登录失败不应该触发重定向
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login')) {
       originalRequest._retry = true;
       
       // 检查刷新冷却时间

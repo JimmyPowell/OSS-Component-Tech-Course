@@ -29,9 +29,9 @@ def create_course_resource(
     """
     Create new course resource. Requires manager role.
     """
-    existing_resource = crud_course_resource.get_by_name(db=db, name=resource_in.name)
+    existing_resource = crud_course_resource.get_by_name_and_type(db=db, name=resource_in.name, resource_type=resource_in.type)
     if existing_resource:
-        return BadRequest(message="Course resource with this name already exists.")
+        return BadRequest(message=f"Course resource with name '{resource_in.name}' already exists in type '{resource_in.type}'.")
     
     # Get user ID from database using UUID (only for create operations where we need the ID)
     from app.crud import crud_user
@@ -72,6 +72,30 @@ def read_course_resources(
 
 # 管理员路由
 admin_router = APIRouter()
+
+@admin_router.post("/")
+def create_course_resource_admin(
+    *,
+    db: Session = Depends(deps.get_db),
+    resource_in: CourseResourceCreate,
+    current_user: dict = Depends(deps.get_current_manager_user),
+):
+    """
+    Create new course resource (Admin only). Requires manager role.
+    """
+    existing_resource = crud_course_resource.get_by_name(db=db, name=resource_in.name)
+    if existing_resource:
+        return BadRequest(message="Course resource with this name already exists.")
+    
+    # Get user ID from database using UUID (only for create operations where we need the ID)
+    from app.crud import crud_user
+    user = crud_user.get_user_by_uuid(db=db, uuid=current_user["uuid"])
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    resource = crud_course_resource.create_course_resource(db=db, resource_in=resource_in, creator_id=user.id)
+    return Success(data=CourseResourceResponse.from_orm(resource).model_dump())
+
 
 @admin_router.get("/")
 def read_course_resources_admin(

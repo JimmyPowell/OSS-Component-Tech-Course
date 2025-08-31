@@ -158,8 +158,11 @@ router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
     if (!authStore.isAuthenticated) {
       // 未登录，触发登录弹窗并保存目标路径
-      console.log('Course resources require authentication. Showing login modal.');
-      authStore.showLoginModal(to.fullPath);
+      // 但是要避免重复触发弹窗（如果弹窗已经显示）
+      if (!authStore.shouldShowLoginModal) {
+        console.log('Course resources require authentication. Showing login modal.');
+        authStore.showLoginModal(to.fullPath);
+      }
       next(false); // 阻止导航
     } else {
       next();
