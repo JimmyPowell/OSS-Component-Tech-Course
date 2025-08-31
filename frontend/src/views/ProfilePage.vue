@@ -275,7 +275,7 @@ const loadUserData = async () => {
     }
 
     console.log('Loading user data from API...');
-    const response = await axios.get('http://localhost:8000/api/v1/auth/me', {
+    const response = await axios.get('https://backend.opendevcourse.com/api/v1/auth/me', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -335,7 +335,7 @@ const saveProfile = async () => {
       }
     });
 
-    const response = await axios.put('http://localhost:8000/api/v1/auth/profile', updateData, {
+    const response = await axios.put('https://backend.opendevcourse.com/api/v1/auth/profile', updateData, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -382,7 +382,7 @@ const changePassword = async () => {
       return;
     }
 
-    const response = await axios.post('http://localhost:8000/api/v1/auth/change-password', {
+    const response = await axios.post('https://backend.opendevcourse.com/api/v1/auth/change-password', {
       old_password: passwordData.value.old_password,
       new_password: passwordData.value.new_password,
       refresh_token: refreshToken
@@ -487,7 +487,7 @@ const saveAvatarOnly = async (avatarUrl) => {
       throw new Error('请先登录');
     }
 
-    const response = await axios.put('http://localhost:8000/api/v1/auth/profile', {
+    const response = await axios.put('https://backend.opendevcourse.com/api/v1/auth/profile', {
       avatar_url: avatarUrl
     }, {
       headers: {
