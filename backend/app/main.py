@@ -1,6 +1,17 @@
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like, notification, blog, batch_import
+from app.config.settings import settings
+from app.config.logging_config import setup_logging
+from app.middleware.logging_middleware import LoggingMiddleware
+
+# 初始化日志配置
+setup_logging(
+    log_level=settings.LOG_LEVEL,
+    log_file_path=settings.LOG_FILE_PATH,
+    log_max_size=settings.LOG_MAX_SIZE,
+    log_backup_count=settings.LOG_BACKUP_COUNT
+)
 
 app = FastAPI(title="FastAPI Project Template")
 
@@ -11,6 +22,9 @@ origins = [
     "http://localhost:5174",  # Allow frontend on port 5174
     "http://127.0.0.1:5174",
 ]
+
+# 添加日志中间件（在CORS之前）
+app.add_middleware(LoggingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

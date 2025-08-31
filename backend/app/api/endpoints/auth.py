@@ -122,7 +122,7 @@ def change_password(
     request: schemas.ChangePasswordRequest,
     db: Session = Depends(deps.get_db),
     redis_client: Redis = Depends(get_redis_client),
-    current_user: models.User = Depends(deps.get_current_user)
+    current_user: models.User = Depends(deps.get_current_user_obj)
 ):
     """
     Change user password.

@@ -66,11 +66,25 @@ h1,h2,h3,h4,h5,h6{
 	border: 0;
 	margin: 0;
 	transition: all ease .3s;
-}
-.navbar-default.active{
+	/* 默认状态：非首页时有白色毛玻璃背景 */
 	background-color: rgba(255, 255, 255, 0.8);
 	backdrop-filter: blur(10px);
 	-webkit-backdrop-filter: blur(10px);
+}
+
+/* 首页未滚动时：完全透明 */
+.navbar-index {
+	background-color: transparent !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+/* 首页滚动后或非首页：白色毛玻璃效果 */
+.navbar-default.active,
+.navbar-index.active {
+	background-color: rgba(255, 255, 255, 0.8) !important;
+	backdrop-filter: blur(10px) !important;
+	-webkit-backdrop-filter: blur(10px) !important;
 }
 .navbar-default .container{
 	height: 90px;
@@ -877,19 +891,10 @@ h1,h2,h3,h4,h5,h6{
 }
 .attachment-title{
 	position: relative;
-	font-size: 32px;
+	font-size: 44px;
 	line-height: 1;
 	padding-bottom: 16px;
-	margin-bottom: 40px;
-}
-.attachment-title::before{
-	content: '';
-	position: absolute;
-	left: 0;
-	bottom: 0;
-	width: 60px;
-	height: 4px;
-	background-color: #5277ff;
+	margin-bottom: 50px;
 }
 .attachment-cell{
 	padding: 15px 20px;

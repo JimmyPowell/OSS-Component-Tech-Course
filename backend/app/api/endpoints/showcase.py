@@ -140,7 +140,7 @@ def read_showcase_admin(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Get showcase by UUID (Admin only).
@@ -212,7 +212,7 @@ def update_showcase_admin(
     db: Session = Depends(deps.get_db),
     uuid: str,
     showcase_in: ShowcaseUpdate,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Update a showcase (Admin only).
@@ -252,7 +252,7 @@ def delete_showcase_admin(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Delete a showcase (Admin only).
@@ -292,7 +292,7 @@ def review_showcase_admin(
     db: Session = Depends(deps.get_db),
     uuid: str,
     review_request: ShowcaseReviewRequest,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Review a showcase (approve/reject) - Admin only.
@@ -356,7 +356,7 @@ def promote_showcase_admin(
     db: Session = Depends(deps.get_db),
     uuid: str,
     promotion_request: ShowcasePromotionRequest,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Promote showcase to excellent - Admin only.
@@ -399,7 +399,7 @@ def archive_showcase_admin(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Archive showcase (published/excellent -> draft) - Admin only.
@@ -421,7 +421,7 @@ def restore_showcase_admin(
     *,
     db: Session = Depends(deps.get_db),
     uuid: str,
-    current_user: User = Depends(deps.get_current_manager_user),
+    current_user: User = Depends(deps.get_current_manager_user_obj),
 ):
     """
     Restore showcase (draft -> published/excellent) - Admin only.

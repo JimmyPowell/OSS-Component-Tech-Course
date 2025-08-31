@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, reactive, computed, watch, onUnmounted } from 'vue';
-import { SearchOutlined, PlusOutlined, SettingOutlined, TagOutlined } from '@ant-design/icons-vue';
+import { SearchOutlined, PlusOutlined, SettingOutlined, TagOutlined, UploadOutlined } from '@ant-design/icons-vue';
 import { message, Modal } from 'ant-design-vue';
 import request from '../utils/request';
 
@@ -48,6 +48,16 @@ const blogDetail = ref(null);
 // 标签管理
 const tags = ref([]);
 const tagModalVisible = ref(false);
+
+// 封面图上传相关 - 添加博客
+const addCoverFileList = ref([]);
+const addCoverUploadProgress = ref(0);
+const isAddCoverUploading = ref(false);
+
+// 封面图上传相关 - 编辑博客
+const editCoverFileList = ref([]);
+const editCoverUploadProgress = ref(0);
+const isEditCoverUploading = ref(false);
 const newTagName = ref('');
 
 // 列设置
@@ -356,6 +366,305 @@ const fetchCurrentUser = async () => {
   }
 };
 
+// 获取七牛云上传token
+const getQiniuUploadToken = async (fileKey, purpose) => {
+  try {
+    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+      file_key: fileKey,
+      purpose: purpose
+    });
+    
+    if (response.data.code === 201) {
+      const data = response.data.data;
+      return {
+        token: data.token,
+        upload_domain: data.upload_domain,
+        download_domain: data.download_domain
+      };
+    } else {
+      throw new Error(response.data.message || '获取上传token失败');
+    }
+  } catch (error) {
+    console.error('获取上传token失败:', error);
+    throw error;
+  }
+};
+
+// 封面图上传前验证
+const beforeCoverUpload = (file) => {
+  const isImage = file.type.startsWith('image/');
+  if (!isImage) {
+    message.error('只能上传图片文件!');
+    return false;
+  }
+  
+  const isLt5M = file.size / 1024 / 1024 < 5;
+  if (!isLt5M) {
+    message.error('图片大小不能超过 5MB!');
+    return false;
+  }
+  
+  return true;
+};
+
+// 添加博客封面图上传
+const handleAddCoverUpload = async (options) => {
+  const { file, onProgress, onSuccess, onError } = options;
+  
+  try {
+    isAddCoverUploading.value = true;
+    addCoverUploadProgress.value = 0;
+    
+    // 更新文件列表为上传中状态
+    addCoverFileList.value = [{
+      uid: file.uid,
+      name: file.name,
+      status: 'uploading',
+      percent: 0
+    }];
+    
+    // 生成文件key
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const fileExtension = file.name.split('.').pop();
+    const fileKey = `blog/cover/${timestamp}_${randomStr}.${fileExtension}`;
+    
+    // 获取上传token和配置信息
+    const tokenInfo = await getQiniuUploadToken(fileKey, `博客封面上传: ${file.name}`);
+    
+    // 上传到七牛云
+    const formData = new FormData();
+    formData.append('key', fileKey);
+    formData.append('token', tokenInfo.token);
+    formData.append('file', file, file.name);
+    
+    const xhr = new XMLHttpRequest();
+    
+    // 监听上传进度
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        addCoverUploadProgress.value = percent;
+        
+        addCoverFileList.value = [{
+          uid: file.uid,
+          name: file.name,
+          status: 'uploading',
+          percent: percent
+        }];
+        
+        if (onProgress) {
+          onProgress({ percent });
+        }
+      }
+    });
+    
+    // 上传完成处理
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          
+          // 设置封面图URL到表单
+          addBlogForm.cover_url = `${tokenInfo.download_domain}/${result.key}`;
+          
+          addCoverUploadProgress.value = 100;
+          message.success('封面图上传成功');
+          
+          addCoverFileList.value = [{
+            uid: file.uid,
+            name: file.name,
+            status: 'done',
+            url: addBlogForm.cover_url,
+            percent: 100
+          }];
+          
+          if (onSuccess) {
+            onSuccess(result, file);
+          }
+          
+        } catch (parseError) {
+          console.error('解析上传响应失败:', parseError);
+          message.error('上传响应解析失败');
+          if (onError) {
+            onError(parseError);
+          }
+        }
+      } else {
+        const errorMsg = `上传失败，状态码: ${xhr.status}`;
+        console.error(errorMsg);
+        message.error(errorMsg);
+        if (onError) {
+          onError(new Error(errorMsg));
+        }
+      }
+      
+      isAddCoverUploading.value = false;
+    });
+    
+    // 上传错误处理
+    xhr.addEventListener('error', () => {
+      const errorMsg = '网络错误，上传失败';
+      console.error(errorMsg);
+      message.error(errorMsg);
+      isAddCoverUploading.value = false;
+      
+      if (onError) {
+        onError(new Error(errorMsg));
+      }
+    });
+    
+    // 开始上传
+    xhr.open('POST', tokenInfo.upload_domain);
+    xhr.send(formData);
+    
+  } catch (error) {
+    console.error('封面图上传失败:', error);
+    message.error('封面图上传失败: ' + error.message);
+    isAddCoverUploading.value = false;
+    
+    if (onError) {
+      onError(error);
+    }
+  }
+};
+
+// 移除添加博客封面图文件
+const handleAddRemoveCoverFile = (file) => {
+  addBlogForm.cover_url = '';
+  addCoverUploadProgress.value = 0;
+  return true;
+};
+
+// 编辑博客封面图上传
+const handleEditCoverUpload = async (options) => {
+  const { file, onProgress, onSuccess, onError } = options;
+  
+  try {
+    isEditCoverUploading.value = true;
+    editCoverUploadProgress.value = 0;
+    
+    // 更新文件列表为上传中状态
+    editCoverFileList.value = [{
+      uid: file.uid,
+      name: file.name,
+      status: 'uploading',
+      percent: 0
+    }];
+    
+    // 生成文件key
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const fileExtension = file.name.split('.').pop();
+    const fileKey = `blog/cover/${timestamp}_${randomStr}.${fileExtension}`;
+    
+    // 获取上传token和配置信息
+    const tokenInfo = await getQiniuUploadToken(fileKey, `博客封面编辑上传: ${file.name}`);
+    
+    // 上传到七牛云
+    const formData = new FormData();
+    formData.append('key', fileKey);
+    formData.append('token', tokenInfo.token);
+    formData.append('file', file, file.name);
+    
+    const xhr = new XMLHttpRequest();
+    
+    // 监听上传进度
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percent = Math.round((event.loaded / event.total) * 100);
+        editCoverUploadProgress.value = percent;
+        
+        editCoverFileList.value = [{
+          uid: file.uid,
+          name: file.name,
+          status: 'uploading',
+          percent: percent
+        }];
+        
+        if (onProgress) {
+          onProgress({ percent });
+        }
+      }
+    });
+    
+    // 上传完成处理
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          
+          // 设置封面图URL到表单
+          editForm.cover_url = `${tokenInfo.download_domain}/${result.key}`;
+          
+          editCoverUploadProgress.value = 100;
+          message.success('封面图上传成功');
+          
+          editCoverFileList.value = [{
+            uid: file.uid,
+            name: file.name,
+            status: 'done',
+            url: editForm.cover_url,
+            percent: 100
+          }];
+          
+          if (onSuccess) {
+            onSuccess(result, file);
+          }
+          
+        } catch (parseError) {
+          console.error('解析上传响应失败:', parseError);
+          message.error('上传响应解析失败');
+          if (onError) {
+            onError(parseError);
+          }
+        }
+      } else {
+        const errorMsg = `上传失败，状态码: ${xhr.status}`;
+        console.error(errorMsg);
+        message.error(errorMsg);
+        if (onError) {
+          onError(new Error(errorMsg));
+        }
+      }
+      
+      isEditCoverUploading.value = false;
+    });
+    
+    // 上传错误处理
+    xhr.addEventListener('error', () => {
+      const errorMsg = '网络错误，上传失败';
+      console.error(errorMsg);
+      message.error(errorMsg);
+      isEditCoverUploading.value = false;
+      
+      if (onError) {
+        onError(new Error(errorMsg));
+      }
+    });
+    
+    // 开始上传
+    xhr.open('POST', tokenInfo.upload_domain);
+    xhr.send(formData);
+    
+  } catch (error) {
+    console.error('封面图上传失败:', error);
+    message.error('封面图上传失败: ' + error.message);
+    isEditCoverUploading.value = false;
+    
+    if (onError) {
+      onError(error);
+    }
+  }
+};
+
+// 移除编辑博客封面图文件
+const handleEditRemoveCoverFile = (file) => {
+  editForm.cover_url = '';
+  editCoverUploadProgress.value = 0;
+  return true;
+};
+
 // 应用列设置
 const applyColumnSettings = () => {
   columnSettingsVisible.value = false;
@@ -629,7 +938,26 @@ onUnmounted(() => {
           />
         </a-form-item>
         <a-form-item label="封面图片">
-          <a-input v-model:value="editForm.cover_url" placeholder="请输入封面图片URL" />
+          <a-upload
+            v-model:file-list="editCoverFileList"
+            :custom-request="handleEditCoverUpload"
+            :before-upload="beforeCoverUpload"
+            :on-remove="handleEditRemoveCoverFile"
+            list-type="picture-card"
+            :max-count="1"
+            accept="image/*"
+          >
+            <div v-if="editCoverFileList.length < 1">
+              <upload-outlined />
+              <div style="margin-top: 8px">上传封面</div>
+            </div>
+          </a-upload>
+          <a-progress 
+            v-if="isEditCoverUploading" 
+            :percent="editCoverUploadProgress" 
+            size="small" 
+            style="margin-top: 8px;"
+          />
         </a-form-item>
         <a-form-item label="状态">
           <a-select v-model:value="editForm.status">
@@ -688,7 +1016,26 @@ onUnmounted(() => {
           />
         </a-form-item>
         <a-form-item label="封面图片">
-          <a-input v-model:value="addBlogForm.cover_url" placeholder="请输入封面图片URL" />
+          <a-upload
+            v-model:file-list="addCoverFileList"
+            :custom-request="handleAddCoverUpload"
+            :before-upload="beforeCoverUpload"
+            :on-remove="handleAddRemoveCoverFile"
+            list-type="picture-card"
+            :max-count="1"
+            accept="image/*"
+          >
+            <div v-if="addCoverFileList.length < 1">
+              <upload-outlined />
+              <div style="margin-top: 8px">上传封面</div>
+            </div>
+          </a-upload>
+          <a-progress 
+            v-if="isAddCoverUploading" 
+            :percent="addCoverUploadProgress" 
+            size="small" 
+            style="margin-top: 8px;"
+          />
         </a-form-item>
         <a-form-item label="状态">
           <a-select v-model:value="addBlogForm.status">

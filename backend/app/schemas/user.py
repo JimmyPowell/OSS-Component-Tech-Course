@@ -135,3 +135,13 @@ class BatchImportResult(BaseModel):
     error_count: int
     errors: List[str]
     created_users: List[UserResponse]
+
+# Schema for admin resetting user password
+class AdminPasswordResetRequest(BaseModel):
+    new_password: str
+    
+    @validator('new_password')
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('密码长度至少为6位')
+        return v

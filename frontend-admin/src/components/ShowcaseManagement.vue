@@ -612,7 +612,8 @@ const getStatusColor = (status) => {
     'pending': 'orange', 
     'published': 'blue',
     'reject': 'red',
-    'excellent': 'purple'
+    'excellent': 'purple',
+    'archived': 'red'
   };
   return statusColors[status] || 'default';
 };
@@ -624,7 +625,8 @@ const getStatusText = (status) => {
     'pending': '待审核',
     'published': '已发布',
     'reject': '已拒绝', 
-    'excellent': '优秀'
+    'excellent': '优秀',
+    'archived': '已下架'
   };
   return statusTexts[status] || status;
 };
@@ -868,34 +870,6 @@ watch(searchValue, (newVal) => {
               讨论管理
             </a-button>
             <a-button size="small" type="primary" @click="editShowcase(record)">编辑</a-button>
-            
-            <!-- 设为优秀按钮 -->
-            <a-button 
-              v-if="record.status === 'published'"
-              size="small" 
-              type="primary"
-              @click="promoteToExcellent(record.uuid)"
-            >
-              设为优秀
-            </a-button>
-            
-            <!-- 下架/恢复按钮 -->
-            <a-button 
-              v-if="record.status === 'published' || record.status === 'excellent'"
-              size="small" 
-              @click="archiveShowcase(record.uuid)"
-            >
-              下架
-            </a-button>
-            <a-button 
-              v-if="record.status === 'draft' && record.previous_status"
-              size="small" 
-              type="primary"
-              @click="restoreShowcase(record.uuid)"
-            >
-              恢复
-            </a-button>
-            
             <a-button size="small" danger @click="deleteShowcase(record)">删除</a-button>
           </div>
         </template>
@@ -970,6 +944,26 @@ watch(searchValue, (newVal) => {
               placeholder="请输入或选择标签"
               :maxTagCount="5"
             />
+          </a-form-item>
+          
+          <a-form-item label="作品状态" required>
+            <a-select
+              v-model:value="addShowcaseForm.status"
+              placeholder="请选择作品状态"
+            >
+              <a-select-option value="draft">
+                <a-tag color="default">草稿</a-tag>
+              </a-select-option>
+              <a-select-option value="published">
+                <a-tag color="blue">已发布</a-tag>
+              </a-select-option>
+              <a-select-option value="excellent">
+                <a-tag color="purple">优秀作品</a-tag>
+              </a-select-option>
+              <a-select-option value="archived">
+                <a-tag color="red">已下架</a-tag>
+              </a-select-option>
+            </a-select>
           </a-form-item>
           
           <a-form-item label="作品封面">
@@ -1057,6 +1051,26 @@ watch(searchValue, (newVal) => {
               placeholder="请输入或选择标签"
               :maxTagCount="5"
             />
+          </a-form-item>
+          
+          <a-form-item label="作品状态" required>
+            <a-select
+              v-model:value="editForm.status"
+              placeholder="请选择作品状态"
+            >
+              <a-select-option value="draft">
+                <a-tag color="default">草稿</a-tag>
+              </a-select-option>
+              <a-select-option value="published">
+                <a-tag color="blue">已发布</a-tag>
+              </a-select-option>
+              <a-select-option value="excellent">
+                <a-tag color="purple">优秀作品</a-tag>
+              </a-select-option>
+              <a-select-option value="archived">
+                <a-tag color="red">已下架</a-tag>
+              </a-select-option>
+            </a-select>
           </a-form-item>
           
           <a-form-item label="作品封面">
@@ -1371,8 +1385,8 @@ watch(searchValue, (newVal) => {
 }
 
 .cover-preview {
-  width: 160px;
-  height: 90px;
+  width: 100px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1397,7 +1411,7 @@ watch(searchValue, (newVal) => {
 }
 
 .description-cell {
-  max-width: 200px;
+  max-width: 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1422,7 +1436,7 @@ watch(searchValue, (newVal) => {
 }
 
 :deep(.ant-table-row) {
-  height: 60px;
+  height: 80px;
 }
 
 :deep(.ant-table-tbody > tr:hover > td) {
@@ -1431,7 +1445,10 @@ watch(searchValue, (newVal) => {
 
 :deep(.ant-table-tbody > tr > td .action-buttons) {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 /* 统一按钮样式 */

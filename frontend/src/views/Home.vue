@@ -70,9 +70,18 @@
           </div>
           <div class="show-cell">
             <div class="showcase-text-content" :class="{ 'fade-in': isFading }">
-              <div class="show-title">{{ currentShowcase?.name || '暂无作品展示' }}</div>
-              <div class="show-item" v-if="currentShowcase?.summary">{{ currentShowcase.summary }}</div>
-              <div class="show-item" v-if="currentShowcase?.detailed_introduction">{{ currentShowcase.detailed_introduction }}</div>
+              <!-- 加载状态 -->
+              <div v-if="isLoadingShowcases" class="show-title">正在加载作品...</div>
+              <!-- 错误状态 -->
+              <div v-else-if="showcaseError" class="show-title">{{ showcaseError }}</div>
+              <!-- 无作品状态 -->
+              <div v-else-if="!currentShowcase" class="show-title">暂无优秀作品展示</div>
+              <!-- 正常显示作品 -->
+              <template v-else>
+                <div class="show-title">{{ currentShowcase.name }}</div>
+                <div class="show-item" v-if="currentShowcase.summary">{{ currentShowcase.summary }}</div>
+                <div class="show-item" v-if="currentShowcase.detailed_introduction">{{ currentShowcase.detailed_introduction }}</div>
+              </template>
             </div>
           </div>
         </div>
@@ -200,12 +209,15 @@
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import Swiper from 'swiper/bundle';
 import apiClient from '../api';
+import { showcaseAPI } from '../api/showcase';
 
 // 作品展示相关状态
 const showcases = ref([]);
 const currentIndex = ref(0);
 const isSliding = ref(false);
 const isFading = ref(false);
+const isLoadingShowcases = ref(true);
+const showcaseError = ref(null);
 
 // 公告相关状态
 const announcements = ref([]);
@@ -285,12 +297,13 @@ const currentShowcase = computed(() => {
 // 获取作品数据
 const fetchShowcases = async () => {
   try {
-    console.log('开始获取作品数据...');
-    // 先尝试不带status参数的请求
-    const response = await apiClient.get('/showcases', {
-      params: {
-        limit: 10
-      }
+    isLoadingShowcases.value = true;
+    showcaseError.value = null;
+    console.log('开始获取前端展示作品数据...');
+    
+    // 使用专用的前端展示API端点，只获取优秀作品
+    const response = await showcaseAPI.getFrontendShowcases({
+      limit: 10
     });
     
     console.log('API响应:', response);
@@ -308,14 +321,17 @@ const fetchShowcases = async () => {
       }
     } else {
       console.log('API调用返回失败状态:', response.data);
+      showcaseError.value = '获取作品数据失败';
       showcases.value = [];
     }
   } catch (error) {
-    console.error('获取作品数据失败，错误详情:', error);
+    console.error('获取前端展示作品数据失败，错误详情:', error);
     console.error('错误响应:', error.response?.data);
     console.error('错误状态码:', error.response?.status);
-    // 如果获取失败，可以使用默认数据
+    showcaseError.value = '网络错误，请稍后重试';
     showcases.value = [];
+  } finally {
+    isLoadingShowcases.value = false;
   }
 };
 

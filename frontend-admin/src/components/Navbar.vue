@@ -90,9 +90,6 @@ onMounted(() => {
           </a-avatar>
           <template #overlay>
             <a-menu @click="handleMenuClick">
-              <a-menu-item key="1">个人设置</a-menu-item>
-              <a-menu-item key="2">修改密码</a-menu-item>
-              <a-menu-divider />
               <a-menu-item key="3">退出登录</a-menu-item>
             </a-menu>
           </template>

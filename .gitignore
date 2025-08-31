@@ -21,3 +21,7 @@ __pycache__/
 # Node.js dependencies
 node_modules/
 
+# Log files
+backend/logs/
+*.log
+

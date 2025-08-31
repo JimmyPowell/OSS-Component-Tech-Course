@@ -1,9 +1,7 @@
 <template>
   <div class="page">
     <div class="container">
-      <div class="page-header">
-        <div class="page-title">优秀作品展示</div>
-      </div>
+      <div class="page-title">优秀作品展示</div>
       
       <!-- Loading state -->
       <div v-if="loading" class="loading-state flex-center">
@@ -213,18 +211,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 页面头部样式 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 40px;
-}
-
-.page-title {
-  margin: 0;
-}
-
 .submit-btn {
   display: inline-flex;
   align-items: center;
@@ -328,13 +314,6 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .page-header {
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
-    text-align: center;
-  }
-
   .submit-btn {
     padding: 10px 16px;
     font-size: 14px;

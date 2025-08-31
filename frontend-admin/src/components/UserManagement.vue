@@ -46,6 +46,14 @@ const addUserForm = reactive({
 const userDetailDrawerVisible = ref(false);
 const userDetail = ref(null);
 
+// 重置密码弹窗
+const resetPasswordVisible = ref(false);
+const resetPasswordForm = reactive({
+  new_password: '',
+  confirm_password: ''
+});
+const resetPasswordUser = ref(null);
+
 // 列设置
 const columnSettingsVisible = ref(false);
 
@@ -429,6 +437,46 @@ const fetchCurrentUser = async () => {
   }
 };
 
+// 显示重置密码弹窗
+const showResetPassword = (user) => {
+  resetPasswordUser.value = user;
+  resetPasswordForm.new_password = '';
+  resetPasswordForm.confirm_password = '';
+  resetPasswordVisible.value = true;
+};
+
+// 处理重置密码
+const handleResetPassword = async () => {
+  // 表单验证
+  if (!resetPasswordForm.new_password) {
+    message.error('请输入新密码');
+    return;
+  }
+  if (resetPasswordForm.new_password.length < 6) {
+    message.error('密码长度至少6位');
+    return;
+  }
+  if (resetPasswordForm.new_password !== resetPasswordForm.confirm_password) {
+    message.error('两次输入的密码不一致');
+    return;
+  }
+
+  try {
+    const response = await request.post(`${API_BASE_URL}/${resetPasswordUser.value.id}/reset-password`, {
+      new_password: resetPasswordForm.new_password
+    });
+    
+    if (response.data.code === 200) {
+      message.success('密码重置成功');
+      resetPasswordVisible.value = false;
+    } else {
+      message.error(response.data.message || '密码重置失败');
+    }
+  } catch (error) {
+     message.error('密码重置失败：' + (error.response?.data?.message || error.message));
+   }
+ };
+
 // 应用列设置
 const applyColumnSettings = () => {
   columnSettingsVisible.value = false;
@@ -576,6 +624,13 @@ onUnmounted(() => {
               :disabled="currentUser && record.id === currentUser.id"
             >
               {{ record.is_active ? '封禁' : '解封' }}
+            </a-button>
+            <a-button 
+              size="small" 
+              @click="showResetPassword(record)"
+              :disabled="currentUser && record.id === currentUser.id"
+            >
+              重置密码
             </a-button>
             <a-button 
               size="small" 
@@ -780,6 +835,45 @@ onUnmounted(() => {
           确定
         </a-button>
       </template>
+    </a-modal>
+
+    <!-- 重置密码Modal -->
+    <a-modal
+      v-model:open="resetPasswordVisible"
+      title="重置用户密码"
+      width="400"
+      @ok="handleResetPassword"
+      @cancel="resetPasswordVisible = false"
+    >
+      <a-form :model="resetPasswordForm" layout="vertical">
+        <a-form-item label="用户名">
+          <a-input :value="resetPasswordUser?.username" disabled />
+        </a-form-item>
+        <a-form-item 
+          label="新密码" 
+          required
+          :rules="[{ required: true, message: '请输入新密码' }, { min: 6, message: '密码长度至少6位' }]"
+        >
+          <a-input-password v-model:value="resetPasswordForm.new_password" placeholder="请输入新密码" />
+        </a-form-item>
+        <a-form-item 
+          label="确认密码" 
+          required
+          :rules="[
+            { required: true, message: '请确认密码' },
+            { 
+              validator: (rule, value) => {
+                if (value && value !== resetPasswordForm.new_password) {
+                  return Promise.reject('两次输入的密码不一致');
+                }
+                return Promise.resolve();
+              }
+            }
+          ]"
+        >
+          <a-input-password v-model:value="resetPasswordForm.confirm_password" placeholder="请再次输入密码" />
+        </a-form-item>
+      </a-form>
     </a-modal>
 
     <!-- 批量导入Modal -->

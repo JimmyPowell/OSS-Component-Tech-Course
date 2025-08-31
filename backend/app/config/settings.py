@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     MAIL_TLS: bool = True
     MAIL_SSL: bool = True
 
+    # Logging Configuration
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE_PATH: str = "./logs"
+    LOG_MAX_SIZE: str = "10MB"
+    LOG_BACKUP_COUNT: int = 30
+
     @property
     def mysql_database_url(self) -> str:
         return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"

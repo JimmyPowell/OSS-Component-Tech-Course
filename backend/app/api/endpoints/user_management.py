@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app import models, crud
-from app.schemas.user import UserUpdate, UserSearchRequest, UserResponse, AdminUserCreate
+from app.schemas.user import UserUpdate, UserSearchRequest, UserResponse, AdminUserCreate, AdminPasswordResetRequest
 from app.api import deps
 from app.utils.response import Success, BadRequest, NotFound, Created
 
@@ -185,4 +185,36 @@ def delete_user(
     return Success(
         data=UserResponse.from_orm(user).dict(),
         message="User deleted successfully"
+    )
+
+@router.post("/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    password_data: AdminPasswordResetRequest,
+    db: Session = Depends(deps.get_db),
+    current_manager: models.User = Depends(deps.get_current_manager_user_obj)
+):
+    """
+    Reset user password by admin (Manager only).
+    """
+    # Prevent managers from resetting their own password
+    if user_id == current_manager.id:
+        return BadRequest(message="Cannot reset your own password. Please use change password feature instead.")
+    
+    # Check if user exists
+    user = crud.crud_user.get_user_by_id(db=db, user_id=user_id)
+    if not user:
+        return NotFound(message="User not found")
+    
+    # Update user password
+    updated_user = crud.crud_user.update_user_password(db=db, user_id=user_id, new_password=password_data.new_password)
+    if not updated_user:
+        return BadRequest(message="Failed to reset password")
+    
+    # Log the operation (optional: you can add logging here)
+    # logger.info(f"Manager {current_manager.username} reset password for user {user.username}")
+    
+    return Success(
+        data=UserResponse.from_orm(updated_user).dict(),
+        message="Password reset successfully"
     )
