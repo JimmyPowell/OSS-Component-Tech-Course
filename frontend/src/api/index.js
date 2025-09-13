@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Use env var with sensible default for same-origin deployments
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+
 const apiClient = axios.create({
-  baseURL: 'https://backend.opendevcourse.com/api/v1',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },

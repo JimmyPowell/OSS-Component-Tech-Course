@@ -38,7 +38,8 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/forum/posts';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/admin/forum/posts`;
 
 const fetchPosts = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -97,7 +98,7 @@ const loadPostDetails = async (postUuid) => {
   loadingDetails.value.add(postUuid);
   try {
     // 使用普通用户的API端点获取详情
-    const response = await request.get(`http://localhost:8000/api/v1/forum/posts/${postUuid}`);
+    const response = await request.get(`${API_BASE}/forum/posts/${postUuid}`);
     console.log('帖子详情API响应:', response.data);
     
     if (response.data.code === 200) {
@@ -123,7 +124,7 @@ const loadPostReplies = async (postUuid) => {
   loadingReplies.value.add(postUuid);
   try {
     // 使用forum reply API获取帖子的回复列表
-    const response = await request.get(`http://localhost:8000/api/v1/forum/replies/post/${postUuid}/tree`);
+    const response = await request.get(`${API_BASE}/forum/replies/post/${postUuid}/tree`);
     console.log('帖子回复API响应:', response.data);
     
     if (response.data.code === 200) {
@@ -203,7 +204,7 @@ const deleteReply = (postUuid, replyUuid) => {
     okType: 'danger',
     onOk: async () => {
       try {
-        const response = await request.delete(`http://localhost:8000/api/v1/admin/forum/replies/${replyUuid}`);
+        const response = await request.delete(`${API_BASE}/admin/forum/replies/${replyUuid}`);
         
         if (response.data.code === 200) {
           message.success('回复删除成功');

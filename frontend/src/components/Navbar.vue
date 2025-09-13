@@ -6,7 +6,7 @@
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
           <span class="iconfont icon-menu"></span>
         </button>
-        <a class="navbar-logo" href="index.html"></a>
+        <router-link class="navbar-logo" to="/"></router-link>
       </div>
       
       <div id="navbar" class="navbar--collapse navbar-content">

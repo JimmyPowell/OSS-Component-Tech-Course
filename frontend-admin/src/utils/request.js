@@ -32,7 +32,8 @@ const refreshToken = async () => {
   }
 
   try {
-    const response = await axios.post('http://localhost:8000/api/v1/auth/refresh', {
+    const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+    const response = await axios.post(`${API_BASE}/auth/refresh`, {
       refresh_token: refreshToken
     });
 

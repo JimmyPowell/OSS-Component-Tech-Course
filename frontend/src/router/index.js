@@ -14,6 +14,8 @@ import ShowcaseDetailPage from '../views/ShowcaseDetailPage.vue';
 // 登录和注册现在使用弹窗模式，不需要独立页面路由
 
 const routes = [
+  // 防止直接访问 /index.html 导致白屏
+  { path: '/index.html', redirect: '/' },
   {
     path: '/login',
     redirect: '/', // 重定向到首页，因为我们使用的是弹窗登录
@@ -126,7 +128,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(to, from, savedPosition) {
     // 如果有锚点，滚动到锚点位置

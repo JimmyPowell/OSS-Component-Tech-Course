@@ -93,60 +93,7 @@
         </div>
       </div>
     </div>
-    <div class="page-section course-section">
-      <div class="container">
-        <div class="page-title text-center">课程简介</div>
-        <ul class="nav kc-tabs" role="tablist">
-          <li role="presentation" :class="{ active: activeTabIndex === 0 }" @click="switchTab(0)">
-            <a>开源基础与入门</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 1 }" @click="switchTab(1)">
-            <a>开发工具与协作</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 2 }" @click="switchTab(2)">
-            <a>构建与测试</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 3 }" @click="switchTab(3)">
-            <a>开源开发实践</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 4 }" @click="switchTab(4)">
-            <a>开源开发实战</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 5 }" @click="switchTab(5)">
-            <a>开源项目管理</a>
-          </li>
-          <li role="presentation" :class="{ active: activeTabIndex === 6 }" @click="switchTab(6)">
-            <a>开源贡献评价体系</a>
-          </li>
-        </ul>
-      </div>
-      <div class="course-card-container">
-        <div class="swiper-container course-swiper">
-          <div class="swiper-wrapper">
-            <div v-for="(course, index) in courseData" :key="index" class="swiper-slide">
-              <div class="kc-card" :class="course.cardClass">
-                <div class="kc-photo">
-                  <div class="photo-box">
-                    <img :src="course.image" :alt="course.title">
-                  </div>
-                </div>
-                <div class="flex-col">
-                  <div class="kc-title">
-                    <a :href="course.link">{{ course.title }}</a>
-                  </div>
-                  <div class="kc-desc">{{ course.description }}</div>
-                  <a :href="course.link" class="btn btn-more">
-                    <span>进入课程</span>
-                    <span class="iconfont icon-a-right"></span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="swiper-pagination course-pagination"></div>
-        </div>
-      </div>
-    </div>
+    <CourseIntroCarousel />
     <div class="page-section">
       <div class="container">
         <!-- 面包屑导航 -->
@@ -210,6 +157,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue';
 import Swiper from 'swiper/bundle';
 import apiClient from '../api';
 import { showcaseAPI } from '../api/showcase';
+import CourseIntroCarousel from '@/components/CourseIntroCarousel.vue';
 
 // 作品展示相关状态
 const showcases = ref([]);
@@ -223,66 +171,7 @@ const showcaseError = ref(null);
 const announcements = ref([]);
 const featuredAnnouncement = computed(() => announcements.value.length > 0 ? announcements.value[0] : null);
 
-// 课程Tab相关状态
-const activeTabIndex = ref(0);
-const autoPlayTimer = ref(null);
-const courseSwiper = ref(null);
-
-// 课程数据映射
-const courseData = [
-  {
-    title: "开源基础与入门",
-    description: "学习开源软件的基本概念、发展历史和核心理念，了解开源社区的运作模式，掌握开源许可证的基本知识，为后续学习奠定坚实基础。",
-    image: "/images/book.png",
-    link: "/resources",
-    cardClass: "kc-card-a"
-  },
-  {
-    title: "开发工具与协作", 
-    description: "掌握Git版本控制系统的使用，学习GitHub/GitLab等代码托管平台的协作流程，了解持续集成和持续部署的基本概念和实践。",
-    image: "/images/book.png",
-    link: "/resources",
-    cardClass: "kc-card-b"
-  },
-  {
-    title: "构建与测试",
-    description: "学习现代软件构建系统的使用，包括Maven、Gradle、npm等，掌握自动化测试的编写和执行，了解代码质量保证的最佳实践。",
-    image: "/images/book.png", 
-    link: "/resources",
-    cardClass: "kc-card-c"
-  },
-  {
-    title: "开源开发实践",
-    description: "通过实际项目体验开源开发流程，学习如何提交Pull Request，参与代码审查，遵循开源项目的开发规范和最佳实践。",
-    image: "/images/book.png",
-    link: "/resources",
-    cardClass: "kc-card-a"
-  },
-  {
-    title: "开源开发实战",
-    description: "深入实际开源项目，学习如何发现和修复bug，如何添加新功能，如何与全球开发者协作，提升实际开发能力。",
-    image: "/images/book.png",
-    link: "/resources",
-    cardClass: "kc-card-b" 
-  },
-  {
-    title: "开源项目管理",
-    description: "学习如何创建和维护开源项目，包括项目文档编写、社区建设、版本发布管理、用户支持等项目管理的各个方面。",
-    image: "/images/book.png",
-    link: "/resources", 
-    cardClass: "kc-card-c"
-  },
-  {
-    title: "开源贡献评价体系",
-    description: "了解开源贡献的评价标准和方法，学习如何建立个人开源档案，掌握开源贡献对职业发展的价值和影响。",
-    image: "/images/book.png",
-    link: "/resources",
-    cardClass: "kc-card-a"
-  }
-];
-
-// 当前课程
-const currentCourse = computed(() => courseData[activeTabIndex.value]);
+// Home 其他区域状态（课程简介已抽离为独立组件）
 
 
 // 当前展示的作品
@@ -418,42 +307,6 @@ const formatDate = (dateString) => {
   return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
 };
 
-// Tab切换功能
-const switchTab = (index) => {
-  if (index === activeTabIndex.value || !courseSwiper.value) return;
-  
-  // 停止自动播放防止冲突
-  if (courseSwiper.value.autoplay) {
-    courseSwiper.value.autoplay.stop();
-  }
-  
-  // 使用Swiper的slideTo方法跳转到指定卡片
-  courseSwiper.value.slideTo(index, 500);
-  
-  // 延迟重新启动自动播放
-  setTimeout(() => {
-    if (courseSwiper.value && courseSwiper.value.autoplay) {
-      courseSwiper.value.autoplay.start();
-    }
-  }, 1000);
-};
-
-// 自动轮播功能 - 现在由Swiper管理
-const startAutoPlay = () => {
-  if (courseSwiper.value) {
-    courseSwiper.value.autoplay.start();
-  }
-};
-
-const stopAutoPlay = () => {
-  if (courseSwiper.value) {
-    courseSwiper.value.autoplay.stop();
-  }
-  if (autoPlayTimer.value) {
-    clearInterval(autoPlayTimer.value);
-    autoPlayTimer.value = null;
-  }
-};
 
 onMounted(() => {
   // 获取作品数据
@@ -480,108 +333,10 @@ onMounted(() => {
     },
   });
   
-  // 初始化课程轮播
-  courseSwiper.value = new Swiper('.course-swiper', {
-    centeredSlides: true,
-    slidesPerView: 3,
-    spaceBetween: 50,
-    autoplay: {
-      delay: 4000,
-      disableOnInteraction: false,
-    },
-    effect: 'coverflow',
-    coverflowEffect: {
-      rotate: 15,
-      stretch: 0,
-      depth: 100,
-      modifier: 1,
-      slideShadows: true,
-    },
-    pagination: {
-      el: '.course-pagination',
-      clickable: true,
-    },
-    // 响应式断点配置
-    breakpoints: {
-      // 当屏幕宽度 >= 1200px
-      1200: {
-        slidesPerView: 3,
-        spaceBetween: 50,
-        coverflowEffect: {
-          rotate: 15,
-          stretch: 0,
-          depth: 100,
-          modifier: 1,
-        }
-      },
-      // 当屏幕宽度 >= 900px
-      900: {
-        slidesPerView: 2.5,
-        spaceBetween: 30,
-        coverflowEffect: {
-          rotate: 12,
-          stretch: 0,
-          depth: 80,
-          modifier: 0.8,
-        }
-      },
-      // 当屏幕宽度 >= 768px
-      768: {
-        slidesPerView: 2,
-        spaceBetween: 20,
-        coverflowEffect: {
-          rotate: 10,
-          stretch: 0,
-          depth: 60,
-          modifier: 0.7,
-        }
-      },
-      // 当屏幕宽度 >= 480px
-      480: {
-        slidesPerView: 1.5,
-        spaceBetween: 15,
-        coverflowEffect: {
-          rotate: 8,
-          stretch: 0,
-          depth: 40,
-          modifier: 0.6,
-        }
-      },
-      // 当屏幕宽度 < 480px
-      0: {
-        slidesPerView: 1,
-        spaceBetween: 10,
-        coverflowEffect: {
-          rotate: 5,
-          stretch: 0,
-          depth: 30,
-          modifier: 0.5,
-        }
-      }
-    },
-    on: {
-      slideChange: function() {
-        // 直接使用activeIndex，因为没有loop模式
-        activeTabIndex.value = this.activeIndex;
-      },
-      reachEnd: function() {
-        // 到达最后一张时，延迟后跳回第一张
-        setTimeout(() => {
-          if (this.activeIndex === courseData.length - 1) {
-            this.slideTo(0, 500);
-          }
-        }, 2000); // 2秒后跳回第一张
-      }
-    }
-  });
-  
-  // 启动课程自动轮播
-  startAutoPlay();
 });
 
 onUnmounted(() => {
-  // 清理自动轮播定时器
-  stopAutoPlay();
+  // 页面卸载清理逻辑（课程简介轮播由子组件负责清理）
 });
 </script>
 
@@ -593,6 +348,21 @@ onUnmounted(() => {
 }
 
 /* 课程卡片容器样式 */
+/* Course section responsive scaling */
+.course-section {
+  /* Unified scaling variables for this section */
+  --pad-y: clamp(24px, 5vw, 80px);
+  --pad-x: clamp(16px, 3.5vw, 40px);
+  --gap: clamp(16px, 3vw, 40px);
+  --title-fs: clamp(18px, 2.4vw, 36px);
+  --desc-fs: clamp(13px, 1.6vw, 16px);
+  --btn-h: clamp(38px, 4.2vw, 50px);
+  --btn-w: clamp(120px, 12vw, 160px);
+  --photo-w: clamp(120px, 16vw, 226px);
+  --photo-h: clamp(130px, 17vw, 244px);
+  --mask-h: calc(var(--photo-h) * 0.47);
+}
+
 .course-card-container {
   padding: 60px 0;
   position: relative;
@@ -604,11 +374,15 @@ onUnmounted(() => {
 }
 
 .course-swiper .swiper-slide {
-  width: 800px;
+  /* Let Swiper compute slide width from slidesPerView */
+  width: auto;
   height: auto;
-  padding-top: 40px;
-  padding-bottom: 40px;
+  padding-top: clamp(16px, 3vw, 40px);
+  padding-bottom: clamp(16px, 3vw, 40px);
   transition: all 0.4s ease;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
 }
 
 .course-swiper .swiper-slide .kc-card {
@@ -618,6 +392,8 @@ onUnmounted(() => {
   border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  gap: var(--gap);
+  padding: var(--pad-y) var(--pad-x) calc(var(--pad-x) * 1.5) var(--pad-x);
 }
 
 /* 中心卡片效果 */
@@ -683,26 +459,43 @@ onUnmounted(() => {
   transform: scale(1.2);
 }
 
+/* Card internals responsive sizing */
+.course-section .kc-title {
+  font-size: var(--title-fs) !important;
+}
+
+.course-section .kc-desc {
+  font-size: var(--desc-fs) !important;
+}
+
+.course-section .kc-photo {
+  width: var(--photo-w) !important;
+  height: var(--photo-h) !important;
+}
+
+.course-section .kc-photo::after {
+  height: var(--mask-h) !important;
+}
+
+.course-section .photo-box {
+  /* Keep the book image floating proportionally */
+  margin-top: calc(var(--photo-h) * -0.49);
+}
+
+.course-section .kc-card .btn-more {
+  width: var(--btn-w);
+  height: var(--btn-h);
+  font-size: clamp(12px, 1.6vw, 16px);
+}
+
 /* 响应式优化 */
 /* 大屏幕优化 */
 @media (min-width: 1200px) {
-  .course-swiper .swiper-slide {
-    width: 800px;
-    max-width: none;
-  }
-  
-  .course-card-container {
-    padding: 80px 0;
-  }
+  .course-card-container { padding: 80px 0; }
 }
 
 /* 中等屏幕优化 */
 @media (max-width: 1199px) and (min-width: 900px) {
-  .course-swiper .swiper-slide {
-    width: 600px;
-    max-width: 90vw;
-  }
-  
   .course-card-container {
     padding: 60px 0;
   }
@@ -715,11 +508,6 @@ onUnmounted(() => {
 
 /* 平板屏幕优化 */
 @media (max-width: 899px) and (min-width: 768px) {
-  .course-swiper .swiper-slide {
-    width: 500px;
-    max-width: 85vw;
-  }
-  
   .course-card-container {
     padding: 50px 0;
   }
@@ -750,11 +538,7 @@ onUnmounted(() => {
     padding: 20px 0;
   }
   
-  .course-swiper .swiper-slide {
-    width: 400px;
-    max-width: 80vw;
-    padding: 20px 0;
-  }
+  .course-swiper .swiper-slide { padding: 20px 0; }
   
   .course-swiper .swiper-slide:not(.swiper-slide-active) .kc-card {
     transform: scale(0.9);
@@ -784,11 +568,7 @@ onUnmounted(() => {
     padding: 15px 0;
   }
   
-  .course-swiper .swiper-slide {
-    width: 320px;
-    max-width: 90vw;
-    padding: 15px 0;
-  }
+  .course-swiper .swiper-slide { padding: 15px 0; }
   
   .course-swiper .swiper-slide .kc-card {
     border-radius: 15px;

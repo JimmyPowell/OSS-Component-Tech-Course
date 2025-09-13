@@ -1280,117 +1280,7 @@ h1,h2,h3,h4,h5,h6{
 	height: 68px;
 	border-radius: 50px;
 }
-.kc-tabs{
-	display: flex;
-	justify-content:space-around;
-	margin-bottom: 80px;
-}
-.kc-tabs li{
-	flex: 1;
-	border-bottom: 1px solid rgba(255, 255, 255, .36);
-}
-.kc-tabs li a{
-	position: relative;
-	display: block;
-	text-align: center;
-	padding: 15px 0px;
-	color: #ffffff;
-	opacity: .5;
-	background: none !important;
-}
-.kc-tabs li.active a{
-	opacity: 1;
-}
-.kc-tabs li.active a::after{
-	content: '';
-	width: 56px;
-	height: 4px;
-	border-radius: 4px;
-	position: absolute;
-	bottom: 0;
-	left: 50%;
-	transform: translateX(-50%);
-	background-color: #ffffff;
-}
-.kc-tabs li.active a::after{
-	opacity: 1;
-}
-.kc-swiper  .swiper-slide{
-	width: 800px;
-	padding-top: 40px;
-	padding-bottom: 40px;
-}
-.kc-card-a{
-	background-image: url(../images/bg1.png);
-}
-.kc-card-b{
-	background-image: url(../images/bg2.png);
-}
-.kc-card-c{
-	background-image: url(../images/bg3.png);
-}
-.kc-photo{
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: relative;
-	width: 226px;
-	height: 244px;
-	border-radius: 20px;
-	background-color: #ffffff;
-}
-.photo-box{
-	margin-top: -120px;
-}
-
-.kc-photo::after{
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	height: 115px;
-	background:url(../images/mask.png) no-repeat;
-	background-size: 100% 100%;
-}
-.kc-card{
-	display: flex;
-	align-items: center;
-	background-position: center;
-	gap: 40px;
-	background-size: cover;
-	padding: 80px 40px 40px 40px;
-	background-repeat: no-repeat;
-	background-position: center;
-	background-size: 100% 100%;
-}
-.kc-card .flex-col{
-	padding-bottom: 50px;
-}
-.kc-card .kc-title{
-	margin-bottom: 20px;
-	font-size: 36px;
-	color: #ffffff;
-	font-weight: bold;
-}
-.kc-card .kc-title a{
-	color: #ffffff;
-}
-.kc-card .kc-desc{
-	line-height: 1.8;
-	margin-bottom: 30px;
-}
-.kc-card .btn-more{
-	width: 160px;
-	height: 50px;
-	border-radius: 50px;
-	background-color: #ffffff;
-	color: #5277ff;
-	font-size: 16px;
-	font-weight: bold;
-	padding: 0 20px;
-}
+/* Removed legacy global course styles (.kc-*) — now scoped in component */
 
 .kefu-link{
 	width: 160px;
@@ -1480,67 +1370,7 @@ h1,h2,h3,h4,h5,h6{
 		right: 10px;
 	}
 	
-	/* 课程区域 */
-	.course-section {
-		padding: 60px 0;
-	}
-	
-	.kc-tabs {
-		flex-direction: column;
-		margin-bottom: 40px;
-	}
-	
-	.kc-tabs li {
-		border-bottom: none;
-		border-right: 1px solid rgba(255, 255, 255, .36);
-	}
-	
-	.kc-tabs li a {
-		padding: 10px 0;
-	}
-	
-	.kc-tabs li.active a::after {
-		width: 4px;
-		height: 30px;
-		left: 0;
-		bottom: 50%;
-		transform: translateY(50%);
-	}
-	
-	.kc-swiper .swiper-slide {
-		width: 100%;
-		padding: 20px;
-	}
-	.kc-photo::after{
-		height: 40px;
-	}
-	.kc-card {
-		background-size: cover;
-		border-radius: 20px;
-		flex-direction: column;
-		gap: 20px;
-		padding: 40px 20px 20px 20px;
-	}
-	
-	.photo-box {
-		margin-top: 0;
-		text-align: center;
-	}
-	
-	.kc-photo {
-		width: 180px;
-		height: 200px;
-		margin: 0 auto;
-	}
-	
-	.kc-card .kc-title {
-		font-size: 28px;
-		text-align: center;
-	}
-	
-	.kc-card .btn-more {
-		margin: 0 auto;
-	}
+/* Removed legacy global course styles in mobile breakpoint */
 	
 	/* 页面通用样式 */
 	.page {
@@ -1765,14 +1595,7 @@ h1,h2,h3,h4,h5,h6{
 		font-size: 24px;
 	}
 	
-	.kc-card .kc-title {
-		font-size: 24px;
-	}
-	
-	.kc-photo {
-		width: 150px;
-		height: 170px;
-	}
+/* Removed legacy .kc-card/.kc-photo overrides for extra small screens */
 	
 	.page-title {
 		font-size: 24px;
@@ -2222,24 +2045,7 @@ h1,h2,h3,h4,h5,h6{
 	box-shadow: 0 10px 25px rgba(82, 119, 255, 0.3);
 }
 
-/* 课程卡片悬浮效果 */
-.kc-card {
-	transition: all 0.4s ease;
-}
-
-.kc-card:hover {
-	transform: translateY(-8px);
-	box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-}
-
-/* 课程照片悬浮效果 */
-.kc-photo {
-	transition: all 0.3s ease;
-}
-
-.kc-card:hover .kc-photo {
-	transform: scale(1.05);
-}
+/* Removed legacy .kc-card hover effects (moved to component) */
 
 /* 通知面板悬浮效果 */
 .notice-list li {
@@ -2410,9 +2216,7 @@ textarea:focus {
 		transform: translateY(-5px) scale(1.01);
 	}
 	
-	.kc-card:hover {
-		transform: translateY(-3px);
-	}
+/* Removed legacy .kc-card hover tweak */
 	
 	/* 移动端减少阴影强度 */
 	.btn-more:hover {
@@ -2429,7 +2233,6 @@ textarea:focus {
 	/* 触摸设备禁用悬浮效果 */
 	.card-img:hover,
 	.discuss-card:hover,
-	.kc-card:hover,
 	.btn-more:hover,
 	.pagination-cell .pagination-btn:hover {
 		transform: none;
@@ -2439,7 +2242,6 @@ textarea:focus {
 	/* 触摸设备使用点击效果 */
 	.card-img:active,
 	.discuss-card:active,
-	.kc-card:active,
 	.btn-more:active,
 	.pagination-cell .pagination-btn:active {
 		transform: scale(0.98);

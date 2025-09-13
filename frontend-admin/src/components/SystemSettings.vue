@@ -81,7 +81,8 @@ const handleChangePassword = async () => {
       refresh_token: refreshToken ? '***' : ''
     });
     
-    const response = await request.post('http://localhost:8000/api/v1/auth/change-password', {
+    const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+    const response = await request.post(`${API_BASE}/auth/change-password`, {
       old_password: passwordForm.old_password,
       new_password: passwordForm.new_password,
       refresh_token: refreshToken

@@ -87,7 +87,8 @@ const currentUser = ref(null);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/users';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/users`;
 
 const fetchUsers = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -191,7 +192,7 @@ const previewImport = async () => {
   try {
     uploadLoading.value = true;
     
-    const response = await request.post('http://localhost:8000/api/v1/batch-import/preview', formData, {
+    const response = await request.post(`${API_BASE}/batch-import/preview`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -225,7 +226,7 @@ const executeImport = async () => {
       conflict_resolution: conflictResolution.value
     };
 
-    const response = await request.post('http://localhost:8000/api/v1/batch-import/execute', requestData);
+    const response = await request.post(`${API_BASE}/batch-import/execute`, requestData);
 
     if (response.data.code === 200 || response.data.code === 201) {
       importResult.value = response.data.data;
@@ -427,7 +428,7 @@ const handleAddUser = async () => {
 // 获取当前用户信息
 const fetchCurrentUser = async () => {
   try {
-    const response = await request.get('http://localhost:8000/api/v1/auth/me');
+        const response = await request.get(`${API_BASE}/auth/me`);
     
     if (response.data.code === 200) {
       currentUser.value = response.data.data;

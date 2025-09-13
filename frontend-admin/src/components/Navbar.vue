@@ -18,7 +18,8 @@ const isLoggedIn = computed(() => {
   return localStorage.getItem('access_token') !== null;
 });
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/auth';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/auth`;
 
 const fetchUserInfo = async () => {
   if (!isLoggedIn.value) return;

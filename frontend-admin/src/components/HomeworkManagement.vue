@@ -90,7 +90,8 @@ const statusOptions = [
   { label: '已发布', value: 'published' }
 ];
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/homeworks';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/admin/homeworks`;
 
 const fetchHomeworks = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -196,7 +197,7 @@ const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
     console.log('正在请求上传token:', { fileKey, purpose });
     
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post(`${API_BASE}/qiniu/admin/upload-token`, {
       file_key: fileKey,
       purpose: purpose
     });

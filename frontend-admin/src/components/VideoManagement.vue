@@ -84,8 +84,9 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/course-resources';
-const ADMIN_API_BASE_URL = 'http://localhost:8000/api/v1/admin/course-resources';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/course-resources`;
+const ADMIN_API_BASE_URL = `${API_BASE}/admin/course-resources`;
 
 // 状态选项
 const statusOptions = [
@@ -174,7 +175,7 @@ const handleTableChange = (page, pageSize) => {
 
 const viewResource = (uuid) => {
   // 在新标签页打开视频预览
-  const url = `/video-preview/${uuid}`;
+  const url = `${import.meta.env.BASE_URL}video-preview/${uuid}`;
   window.open(url, '_blank');
 };
 
@@ -327,7 +328,7 @@ const handleRemoveFile = (file) => {
 // 获取七牛云上传token和配置信息
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post(`${API_BASE}/qiniu/admin/upload-token`, {
       file_key: fileKey,
       purpose: purpose
     });

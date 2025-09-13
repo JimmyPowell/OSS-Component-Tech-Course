@@ -22,7 +22,8 @@ const chapters = ref([]);
 const currentChapter = ref(null);
 const loadingChapters = ref(false);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/course-resources';
+const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const API_BASE_URL = `${API_BASE}/course-resources`;
 
 // 获取视频详情
 const fetchVideoDetail = async () => {
