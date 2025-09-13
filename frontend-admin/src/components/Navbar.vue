@@ -18,7 +18,7 @@ const isLoggedIn = computed(() => {
   return localStorage.getItem('access_token') !== null;
 });
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/auth';
+const API_BASE_URL = '/auth';
 
 const fetchUserInfo = async () => {
   if (!isLoggedIn.value) return;

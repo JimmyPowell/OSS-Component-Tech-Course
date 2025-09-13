@@ -4,6 +4,7 @@ import router from '../router';
 
 // 创建axios实例
 const request = axios.create({
+  baseURL: import.meta?.env?.VITE_API_BASE_URL,
   timeout: 10000,
 });
 
@@ -32,7 +33,7 @@ const refreshToken = async () => {
   }
 
   try {
-    const response = await axios.post('http://localhost:8000/api/v1/auth/refresh', {
+    const response = await axios.post(`${import.meta?.env?.VITE_API_BASE_URL}/auth/refresh`, {
       refresh_token: refreshToken
     });
 

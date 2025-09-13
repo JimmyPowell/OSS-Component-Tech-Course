@@ -1330,29 +1330,40 @@ h1,h2,h3,h4,h5,h6{
 	background-image: url(../images/bg3.png);
 }
 .kc-photo{
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: relative;
-	width: 226px;
-	height: 244px;
-	border-radius: 20px;
-	background-color: #ffffff;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    /* Responsive size: scale with viewport while keeping aspect ratio */
+    width: clamp(220px, 26vw, 360px);
+    aspect-ratio: 226 / 244;
+    height: auto;
+    border-radius: 20px;
+    background-color: #ffffff;
 }
 .photo-box{
-	margin-top: -120px;
+    /* Use percentage for responsive vertical offset */
+    margin-top: -12%;
+}
+/* Ensure the image scales nicely within the white panel */
+.photo-box img{
+    width: 85%;
+    height: auto;
+    object-fit: contain;
+    display: block;
 }
 
 .kc-photo::after{
-	content: '';
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	height: 115px;
-	background:url(../images/mask.png) no-repeat;
-	background-size: 100% 100%;
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    /* Scale the mask height with the container for responsiveness */
+    height: 48%;
+    background:url(../images/mask.png) no-repeat;
+    background-size: 100% 100%;
 }
 .kc-card{
 	display: flex;

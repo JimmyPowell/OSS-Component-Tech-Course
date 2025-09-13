@@ -61,7 +61,7 @@ const colorOptions = [
   '#a0d911', '#1890ff'
 ];
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/forum/categories';
+const API_BASE_URL = '/admin/forum/categories';
 
 // 获取分类列表
 const fetchCategories = async (page = 1, pageSize = 20, search = '') => {

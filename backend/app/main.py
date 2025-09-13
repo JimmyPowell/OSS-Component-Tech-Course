@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.endpoints import auth, course_resource, homework, showcase, showcase_comment, showcase_comment_reply, user_management, qiniu, announcement, forum_category, forum_post, forum_reply, like, notification, blog, batch_import
 from app.config.settings import settings
 from app.config.logging_config import setup_logging
+import os
 from app.middleware.logging_middleware import LoggingMiddleware
 
 # 初始化日志配置
@@ -15,13 +16,21 @@ setup_logging(
 
 app = FastAPI(title="FastAPI Project Template")
 
-# CORS Middleware
-origins = [
-    "http://localhost:5173",  # Allow your frontend origin
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",  # Allow frontend on port 5174
-    "http://127.0.0.1:5174",
-]
+"""
+CORS settings: allow dev and configurable prod origins.
+If env var CORS_ALLOW_ORIGINS is set (comma-separated), use that.
+Otherwise default to local dev ports for Vite.
+"""
+origins_env = os.getenv("CORS_ALLOW_ORIGINS", "")
+if origins_env:
+    origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+else:
+    origins = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ]
 
 # 添加日志中间件（在CORS之前）
 app.add_middleware(LoggingMiddleware)

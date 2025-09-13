@@ -67,7 +67,7 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/announcements';
+const API_BASE_URL = '/admin/announcements';
 
 // 状态选项
 const statusOptions = [
@@ -129,7 +129,7 @@ const refreshList = () => {
 // 获取七牛云上传token和配置信息
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post('/qiniu/admin/upload-token', {
       file_key: fileKey,
       purpose: purpose
     });

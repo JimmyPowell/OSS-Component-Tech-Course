@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Resolve API base URL. Vite always injects import.meta.env in dev/build.
+const envBase = import.meta?.env?.VITE_API_BASE_URL;
+const mode = import.meta?.env?.MODE || 'development';
+const baseURL = envBase || (mode === 'development' ? 'http://localhost:8000/api/v1' : 'https://backend.opendevcourse.com/api/v1');
+// Debug helper (optional):
+// console.info('[api] MODE=', mode, 'VITE_API_BASE_URL=', envBase, '-> baseURL=', baseURL);
+
 const apiClient = axios.create({
-  baseURL: 'https://backend.opendevcourse.com/api/v1',
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -35,13 +35,13 @@ const columnSettings = reactive([...availableColumns]);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/showcase-comments';
+const API_BASE_URL = '/showcase-comments';
 
 const fetchDiscussions = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
   try {
     // 先获取所有作品
-    const showcasesResponse = await request.get('http://localhost:8000/api/v1/admin/showcases');
+    const showcasesResponse = await request.get('/admin/showcases');
     if (showcasesResponse.data.code !== 200) {
       message.error('获取作品列表失败');
       return;

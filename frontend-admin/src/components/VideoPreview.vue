@@ -22,7 +22,7 @@ const chapters = ref([]);
 const currentChapter = ref(null);
 const loadingChapters = ref(false);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/course-resources';
+const API_BASE_URL = '/course-resources';
 
 // 获取视频详情
 const fetchVideoDetail = async () => {

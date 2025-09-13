@@ -89,7 +89,7 @@ const statusOptions = [
   { label: '已归档', value: 'archived' }
 ];
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/showcases';
+const API_BASE_URL = '/admin/showcases';
 
 const fetchShowcases = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -148,7 +148,7 @@ const refreshList = () => {
 // 获取七牛云上传token和配置信息
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post('/qiniu/admin/upload-token', {
       file_key: fileKey,
       purpose: purpose
     });

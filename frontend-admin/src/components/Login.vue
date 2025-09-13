@@ -58,7 +58,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { message } from 'ant-design-vue';
-import axios from 'axios';
+import request from '../utils/request';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -69,13 +69,13 @@ const formState = reactive({
   password: ''
 });
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/auth';
+const API_BASE_URL = '/auth';
 
 const onFinish = async (values) => {
   loading.value = true;
   
   try {
-    const response = await axios.post(`${API_BASE_URL}/login`, {
+    const response = await request.post(`${API_BASE_URL}/login`, {
       identifier: values.identifier,
       password: values.password
     });

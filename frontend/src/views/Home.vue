@@ -603,14 +603,17 @@ onUnmounted(() => {
   padding: 40px 0;
 }
 
+/* Slide宽高：随视口缩放，避免内容把卡片拉得又高又瘦 */
 .course-swiper .swiper-slide {
   width: 800px;
-  height: auto;
+  /* 目标高度：最小 420px，常态跟随视口，最大 640px */
+  height: clamp(420px, 56vw, 640px);
   padding-top: 40px;
   padding-bottom: 40px;
   transition: all 0.4s ease;
 }
 
+/* 卡片填满Slide，以便整体等比缩放视觉 */
 .course-swiper .swiper-slide .kc-card {
   width: 100%;
   height: 100%;
@@ -701,7 +704,30 @@ onUnmounted(() => {
   .course-swiper .swiper-slide {
     width: 600px;
     max-width: 90vw;
+    /* 中屏高度跟随视口，限制最大值，避免“拉长”视觉 */
+    height: clamp(420px, 60vw, 600px);
   }
+  /* 中屏收紧排版间距与字号，整体看起来更“缩小” */
+  .course-swiper .swiper-slide .kc-card {
+    padding: 50px 30px 30px 30px;
+    gap: 24px;
+    /* 方案B：整体等比缩小卡片（含背景与内部） */
+    transform-origin: center center;
+    transform: scale(0.90);
+  }
+  .course-swiper .swiper-slide .kc-card .kc-title {
+    font-size: 30px;
+  }
+  .course-swiper .swiper-slide .kc-card .kc-desc {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .course-swiper .swiper-slide .kc-card .flex-col {
+    padding-bottom: 20px;
+  }
+  /* 中屏下调非中心卡片的缩放差，保持层次 */
+  .course-swiper .swiper-slide-active .kc-card { transform: scale(0.95); }
+  .course-swiper .swiper-slide:not(.swiper-slide-active) .kc-card { transform: scale(0.80); }
   
   .course-card-container {
     padding: 60px 0;
@@ -718,7 +744,26 @@ onUnmounted(() => {
   .course-swiper .swiper-slide {
     width: 500px;
     max-width: 85vw;
+    height: clamp(400px, 64vw, 560px);
   }
+  .course-swiper .swiper-slide .kc-card {
+    padding: 40px 24px 24px 24px;
+    gap: 20px;
+    transform-origin: center center;
+    transform: scale(0.86);
+  }
+  .course-swiper .swiper-slide .kc-card .kc-title {
+    font-size: 26px;
+  }
+  .course-swiper .swiper-slide .kc-card .kc-desc {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .course-swiper .swiper-slide .kc-card .flex-col {
+    padding-bottom: 16px;
+  }
+  .course-swiper .swiper-slide-active .kc-card { transform: scale(0.90); }
+  .course-swiper .swiper-slide:not(.swiper-slide-active) .kc-card { transform: scale(0.78); }
   
   .course-card-container {
     padding: 50px 0;
@@ -754,7 +799,15 @@ onUnmounted(() => {
     width: 400px;
     max-width: 80vw;
     padding: 20px 0;
+    /* 小平板：给一个更保守的高度范围 */
+    height: clamp(360px, 70vw, 520px);
   }
+  .course-swiper .swiper-slide .kc-card {
+    transform-origin: center center;
+    transform: scale(0.82);
+  }
+  .course-swiper .swiper-slide-active .kc-card { transform: scale(0.86); }
+  .course-swiper .swiper-slide:not(.swiper-slide-active) .kc-card { transform: scale(0.76); }
   
   .course-swiper .swiper-slide:not(.swiper-slide-active) .kc-card {
     transform: scale(0.9);

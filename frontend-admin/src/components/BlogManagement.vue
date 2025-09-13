@@ -80,7 +80,7 @@ const currentUser = ref(null);
 // 表格高度自适应
 const tableHeight = ref(600);
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/blogs';
+const API_BASE_URL = '/blogs';
 
 // 状态选项
 const statusOptions = [
@@ -356,7 +356,7 @@ const openTagManagement = () => {
 // 获取当前用户信息
 const fetchCurrentUser = async () => {
   try {
-    const response = await request.get('http://localhost:8000/api/v1/auth/me');
+    const response = await request.get('/auth/me');
     
     if (response.data.code === 200) {
       currentUser.value = response.data.data;
@@ -369,7 +369,7 @@ const fetchCurrentUser = async () => {
 // 获取七牛云上传token
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post('/qiniu/admin/upload-token', {
       file_key: fileKey,
       purpose: purpose
     });

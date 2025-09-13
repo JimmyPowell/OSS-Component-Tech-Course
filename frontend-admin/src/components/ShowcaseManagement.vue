@@ -88,7 +88,7 @@ const columnSettings = reactive([...availableColumns]);
 const tableHeight = ref(600);
 
 
-const API_BASE_URL = 'http://localhost:8000/api/v1/admin/showcases';
+const API_BASE_URL = '/admin/showcases';
 
 const fetchShowcases = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
@@ -147,7 +147,7 @@ const refreshList = () => {
 // 获取七牛云上传token和配置信息
 const getQiniuUploadToken = async (fileKey, purpose) => {
   try {
-    const response = await request.post('http://localhost:8000/api/v1/qiniu/admin/upload-token', {
+    const response = await request.post('/qiniu/admin/upload-token', {
       file_key: fileKey,
       purpose: purpose
     });
@@ -645,7 +645,7 @@ const fetchShowcaseComments = async (showcaseUuid, page = 1, pageSize = 20) => {
   loadingComments.value = true;
   try {
     // 先通过showcase UUID获取showcase ID
-    const showcaseResponse = await request.get(`http://localhost:8000/api/v1/showcases/${showcaseUuid}`);
+    const showcaseResponse = await request.get(`/showcases/${showcaseUuid}`);
     
     if (showcaseResponse.data.code !== 200) {
       message.error('获取作品信息失败');
@@ -655,7 +655,7 @@ const fetchShowcaseComments = async (showcaseUuid, page = 1, pageSize = 20) => {
     const showcaseId = showcaseResponse.data.data.id;
     
     // 获取评论列表
-    const response = await request.get(`http://localhost:8000/api/v1/showcase-comments?showcase_id=${showcaseId}&skip=0&limit=100`);
+    const response = await request.get(`/showcase-comments?showcase_id=${showcaseId}&skip=0&limit=100`);
     
     if (response.data.code === 200) {
       showcaseComments.value = response.data.data.items;
@@ -676,7 +676,7 @@ const loadCommentReplies = async (commentUuid) => {
   
   loadingReplies.value.add(commentUuid);
   try {
-    const response = await request.get(`http://localhost:8000/api/v1/showcase-comment-replies?comment_uuid=${commentUuid}&skip=0&limit=100`);
+    const response = await request.get(`/showcase-comment-replies?comment_uuid=${commentUuid}&skip=0&limit=100`);
     
     if (response.data.code === 200) {
       commentReplies.value[commentUuid] = response.data.data.items;
@@ -713,7 +713,7 @@ const deleteShowcaseComment = (commentUuid) => {
     okType: 'danger',
     onOk: async () => {
       try {
-        const response = await request.delete(`http://localhost:8000/api/v1/showcase-comments/${commentUuid}`);
+        const response = await request.delete(`/showcase-comments/${commentUuid}`);
         
         if (response.data.code === 200) {
           message.success('评论删除成功');
@@ -738,7 +738,7 @@ const deleteCommentReply = (commentUuid, replyUuid) => {
     okType: 'danger',
     onOk: async () => {
       try {
-        const response = await request.delete(`http://localhost:8000/api/v1/showcase-comment-replies/${replyUuid}`);
+        const response = await request.delete(`/showcase-comment-replies/${replyUuid}`);
         
         if (response.data.code === 200) {
           message.success('回复删除成功');

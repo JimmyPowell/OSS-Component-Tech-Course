@@ -81,7 +81,7 @@ const handleChangePassword = async () => {
       refresh_token: refreshToken ? '***' : ''
     });
     
-    const response = await request.post('http://localhost:8000/api/v1/auth/change-password', {
+    const response = await request.post('/auth/change-password', {
       old_password: passwordForm.old_password,
       new_password: passwordForm.new_password,
       refresh_token: refreshToken
