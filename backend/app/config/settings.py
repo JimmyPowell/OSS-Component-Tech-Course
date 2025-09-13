@@ -44,7 +44,9 @@ class Settings(BaseSettings):
 
     @property
     def mysql_database_url(self) -> str:
-        return f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+        base = f"mysql+pymysql://{self.MYSQL_USER}:{self.MYSQL_PASSWORD}@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+        # Ensure utf8mb4 connection charset
+        return base + "?charset=utf8mb4"
 
     # No need for model_config to specify env_file anymore, as we've loaded it manually
     model_config = SettingsConfigDict(env_file_encoding='utf-8')
