@@ -10,10 +10,14 @@ def get_user_by_uuid(db: Session, uuid: str) -> User:
     return db.query(User).filter(User.uuid == uuid).first()
 
 def get_user_by_email(db: Session, email: str) -> User:
-    return db.query(User).filter(User.email == email).first()
+    return db.query(User).filter(
+        and_(User.email == email, User.deleted_at.is_(None))
+    ).first()
 
 def get_user_by_username(db: Session, username: str) -> User:
-    return db.query(User).filter(User.username == username).first()
+    return db.query(User).filter(
+        and_(User.username == username, User.deleted_at.is_(None))
+    ).first()
 
 def create_user(db: Session, user_data: dict) -> User:
     hashed_password = hash_password(user_data["password"])
