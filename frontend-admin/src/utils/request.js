@@ -2,9 +2,16 @@ import axios from 'axios';
 import { message } from 'ant-design-vue';
 import router from '../router';
 
+// 统一解析 Base URL，避免 env 缺失时落回同源导致 404
+const envBase = import.meta?.env?.VITE_API_BASE_URL;
+const mode = import.meta?.env?.MODE || 'development';
+const BASE_URL = envBase || (mode === 'development'
+  ? 'http://localhost:8000/api/v1'
+  : 'https://backend.opendevcourse.com/api/v1');
+
 // 创建axios实例
 const request = axios.create({
-  baseURL: import.meta?.env?.VITE_API_BASE_URL,
+  baseURL: BASE_URL,
   timeout: 10000,
 });
 
@@ -33,7 +40,8 @@ const refreshToken = async () => {
   }
 
   try {
-    const response = await axios.post(`${import.meta?.env?.VITE_API_BASE_URL}/auth/refresh`, {
+    // 使用基础 axios，避免与拦截器相互影响；显式拼接 BASE_URL
+    const response = await axios.post(`${BASE_URL}/auth/refresh`, {
       refresh_token: refreshToken
     });
 
