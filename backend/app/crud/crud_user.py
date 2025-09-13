@@ -231,10 +231,15 @@ def batch_create_users(db: Session, users_data: List[dict], conflict_resolution:
                 
                 # Create new user
                 username = user_data["real_name"]
-                password = user_data["real_name"]  # Password same as real_name
-                # Generate temporary email with valid domain
-                import time
-                email = f"{username}_{int(time.time())}@example.com"
+                password = user_data.get("student_id", user_data["real_name"])  # Password same as student_id, fallback to real_name
+                # Generate email with school domain using student_id
+                student_id = user_data.get("student_id")
+                if student_id:
+                    email = f"{student_id}@stu.neu.edu.cn"
+                else:
+                    # Fallback to temporary email if no student_id
+                    import time
+                    email = f"{username}_{int(time.time())}@example.com"
                 
                 new_user_data = {
                     "username": username,

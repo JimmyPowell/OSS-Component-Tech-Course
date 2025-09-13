@@ -1,7 +1,3 @@
--- Ensure session uses utf8mb4
-SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
-SET collation_connection = utf8mb4_unicode_ci;
-
 create table announcements
 (
     id           int unsigned auto_increment
@@ -18,7 +14,7 @@ create table announcements
     status       enum ('draft', 'published') default 'draft'           not null comment '状态：草稿/已发布',
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_announcements_created_at
     on announcements (created_at);
@@ -39,7 +35,7 @@ create table blog_tags
     created_at  timestamp  default CURRENT_TIMESTAMP null,
     constraint name
         unique (name)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     comment 'Blog标签表';
 
 create index idx_name
@@ -61,11 +57,11 @@ create table course_resources
     resource_url   varchar(512)                                          not null,
     file_size      int unsigned                                          null,
     mime_type      varchar(100)                                          null,
-    download_count int unsigned                default 0                 not null,
+    download_count int unsigned                default '0'               not null,
     status         enum ('draft', 'published') default 'draft'           not null comment '状态：草稿/已发布',
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_course_resource_published
     on course_resources (status, created_at);
@@ -95,13 +91,13 @@ create table forum_categories
     icon        varchar(100)                           null,
     sort_order  int          default 0                 not null,
     is_active   tinyint(1)   default 1                 not null,
-    post_count  int unsigned default 0                 not null,
+    post_count  int unsigned default '0'               not null,
     created_at  timestamp    default CURRENT_TIMESTAMP not null,
     updated_at  timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     deleted_at  timestamp                              null,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_forum_categories_deleted_at
     on forum_categories (deleted_at);
@@ -130,7 +126,7 @@ create table homeworks
     deleted_at    timestamp                                             null,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_homeworks_creator_id
     on homeworks (creator_id);
@@ -154,7 +150,7 @@ create table qiniu_tokens
     bucket      varchar(100)                                                                          not null,
     file_key    varchar(512)                                                                          null,
     token       varchar(1024)                                                                         not null,
-    expires_at  timestamp                                                   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
+    expires_at  timestamp                                                                             not null,
     purpose     varchar(255)                                                                          null comment 'Token usage purpose description',
     status      enum ('pending', 'approved', 'rejected', 'expired', 'used') default 'pending'         not null,
     approved_by int unsigned                                                                          null,
@@ -164,7 +160,7 @@ create table qiniu_tokens
     updated_at  timestamp                                                   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_qiniu_tokens_approved_by
     on qiniu_tokens (approved_by);
@@ -193,13 +189,13 @@ create table showcase_comment_replies
     user_id          int unsigned                           not null,
     reply_to_user_id int unsigned                           null,
     content          text                                   not null,
-    likes_count      int unsigned default 0                 not null,
+    likes_count      int unsigned default '0'               not null,
     created_at       timestamp    default CURRENT_TIMESTAMP not null,
     updated_at       timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     deleted_at       timestamp                              null,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcase_comment_replies_comment_id
     on showcase_comment_replies (comment_id);
@@ -221,13 +217,13 @@ create table showcase_comments
     showcase_id int unsigned                           not null,
     user_id     int unsigned                           not null,
     content     text                                   not null,
-    likes_count int unsigned default 0                 not null,
+    likes_count int unsigned default '0'               not null,
     created_at  timestamp    default CURRENT_TIMESTAMP not null,
     updated_at  timestamp    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP,
     deleted_at  timestamp                              null,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcase_comments_deleted_at
     on showcase_comments (deleted_at);
@@ -252,8 +248,8 @@ create table showcases
     tags                  json                                                                                    null,
     status                enum ('draft', 'pending', 'published', 'reject', 'excellent') default 'draft'           not null,
     previous_status       varchar(20)                                                                             null,
-    views_count           int unsigned                                                  default 0                 not null,
-    likes_count           int unsigned                                                  default 0                 not null,
+    views_count           int unsigned                                                  default '0'               not null,
+    likes_count           int unsigned                                                  default '0'               not null,
     reviewer_id           int unsigned                                                                            null,
     review_comment        text                                                                                    null,
     reviewed_at           timestamp                                                                               null,
@@ -262,7 +258,7 @@ create table showcases
     deleted_at            timestamp                                                                               null,
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcases_author_id
     on showcases (author_id);
@@ -301,7 +297,7 @@ create table users
         unique (username),
     constraint uuid
         unique (uuid)
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create table blogs
 (
@@ -313,8 +309,8 @@ create table blogs
     summary    text                                                              null comment '文章摘要',
     author_id  int unsigned                                                      not null comment '作者ID',
     cover_url  varchar(500)                                                      null comment '封面图片URL',
-    view_count int unsigned                            default 0                 null comment '浏览次数',
-    like_count int unsigned                            default 0                 null comment '点赞次数',
+    view_count int unsigned                            default '0'               null comment '浏览次数',
+    like_count int unsigned                            default '0'               null comment '点赞次数',
     status     enum ('draft', 'published', 'archived') default 'published'       null comment '状态:草稿/已发布/已归档',
     is_deleted tinyint(1)                              default 0                 null comment '软删除标记',
     created_at timestamp                               default CURRENT_TIMESTAMP null,
@@ -324,7 +320,7 @@ create table blogs
     constraint blogs_ibfk_1
         foreign key (author_id) references users (id)
             on delete cascade
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     comment 'Blog文章表';
 
 create table blog_tag_relations
@@ -342,7 +338,7 @@ create table blog_tag_relations
     constraint blog_tag_relations_ibfk_2
         foreign key (tag_id) references blog_tags (id)
             on delete cascade
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     comment 'Blog文章标签关联表';
 
 create index idx_blog
@@ -378,8 +374,8 @@ create table forum_posts
     is_pinned          tinyint(1)   default 0                 not null,
     is_locked          tinyint(1)   default 0                 not null,
     is_deleted         tinyint(1)   default 0                 not null,
-    view_count         int unsigned default 0                 not null,
-    reply_count        int unsigned default 0                 not null,
+    view_count         int unsigned default '0'               not null,
+    reply_count        int unsigned default '0'               not null,
     last_reply_at      timestamp                              null,
     last_reply_user_id int unsigned                           null,
     created_at         timestamp    default CURRENT_TIMESTAMP not null,
@@ -394,7 +390,7 @@ create table forum_posts
     constraint forum_posts_ibfk_3
         foreign key (last_reply_user_id) references users (id)
             on delete set null
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_forum_posts_category_id
     on forum_posts (category_id);
@@ -451,7 +447,7 @@ create table forum_replies
     constraint forum_replies_ibfk_4
         foreign key (reply_to_user_id) references users (id)
             on delete set null
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_forum_replies_created_at
     on forum_replies (created_at);
@@ -504,7 +500,7 @@ create table notifications
     constraint notifications_ibfk_3
         foreign key (admin_id) references users (id)
             on delete set null
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_notifications_admin_id
     on notifications (admin_id);
@@ -542,7 +538,7 @@ create table showcase_comment_likes
     constraint showcase_comment_likes_ibfk_2
         foreign key (user_id) references users (id)
             on delete cascade
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcase_comment_likes_comment_id
     on showcase_comment_likes (comment_id);
@@ -568,7 +564,7 @@ create table showcase_comment_reply_likes
     constraint showcase_comment_reply_likes_ibfk_2
         foreign key (user_id) references users (id)
             on delete cascade
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcase_comment_reply_likes_reply_id
     on showcase_comment_reply_likes (reply_id);
@@ -594,7 +590,7 @@ create table showcase_likes
     constraint showcase_likes_ibfk_2
         foreign key (user_id) references users (id)
             on delete cascade
- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 create index idx_showcase_likes_showcase_id
     on showcase_likes (showcase_id);
@@ -607,3 +603,4 @@ create index idx_users_deleted_at
 
 create index idx_users_is_active
     on users (is_active);
+
