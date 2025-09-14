@@ -23,6 +23,7 @@ CREATE TABLE course_resources (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uuid CHAR(36) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
+    summary VARCHAR(512) NULL,
     type ENUM('ppt', 'video', 'attachment', 'other') NOT NULL,
     description TEXT NULL,
     creator_id INT UNSIGNED NOT NULL,

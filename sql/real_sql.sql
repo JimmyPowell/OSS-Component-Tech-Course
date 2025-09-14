@@ -47,6 +47,7 @@ create table course_resources
         primary key,
     uuid           char(36)                                              not null,
     name           varchar(255)                                          not null,
+    summary        varchar(512)                                          null,
     type           enum ('ppt', 'video', 'attachment', 'other')          not null,
     description    text                                                  null,
     creator_id     int unsigned                                          not null,
@@ -603,4 +604,3 @@ create index idx_users_deleted_at
 
 create index idx_users_is_active
     on users (is_active);
-

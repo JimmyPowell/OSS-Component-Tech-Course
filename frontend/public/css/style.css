@@ -847,13 +847,13 @@ h1,h2,h3,h4,h5,h6{
 	color: #5e6a75;
 }
 .card-desc{
-	color: #44494f;
-	line-height: 1.76;
-	overflow: hidden;
-	display: -webkit-box;
-	line-clamp: 2;
-	box-orient: vertical;
-	text-overflow: ellipsis;
+    color: #44494f;
+    line-height: 1.76;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
 }
 .v-icon{
 	background: url(../images/v-icon.png) center center no-repeat;

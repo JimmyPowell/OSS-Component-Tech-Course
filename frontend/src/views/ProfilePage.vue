@@ -197,7 +197,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
-import axios from 'axios';
+import apiClient from '../api';
 import AvatarCropper from '../components/AvatarCropper.vue';
 
 const authStore = useAuthStore();
@@ -275,11 +275,7 @@ const loadUserData = async () => {
     }
 
     console.log('Loading user data from API...');
-    const response = await axios.get('https://backend.opendevcourse.com/api/v1/auth/me', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await apiClient.get('/auth/me');
 
     console.log('User data response:', response.data);
     
@@ -335,12 +331,7 @@ const saveProfile = async () => {
       }
     });
 
-    const response = await axios.put('https://backend.opendevcourse.com/api/v1/auth/profile', updateData, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await apiClient.put('/auth/profile', updateData);
 
     if (response.data.code === 200) {
       alert('个人资料更新成功！');
@@ -382,15 +373,10 @@ const changePassword = async () => {
       return;
     }
 
-    const response = await axios.post('https://backend.opendevcourse.com/api/v1/auth/change-password', {
+    const response = await apiClient.post('/auth/change-password', {
       old_password: passwordData.value.old_password,
       new_password: passwordData.value.new_password,
       refresh_token: refreshToken
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
     });
 
     if (response.data.code === 200) {
@@ -487,13 +473,8 @@ const saveAvatarOnly = async (avatarUrl) => {
       throw new Error('请先登录');
     }
 
-    const response = await axios.put('https://backend.opendevcourse.com/api/v1/auth/profile', {
+    const response = await apiClient.put('/auth/profile', {
       avatar_url: avatarUrl
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
     });
 
     if (response.data.code === 200) {
