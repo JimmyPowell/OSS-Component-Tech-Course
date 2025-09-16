@@ -191,16 +191,33 @@
       style="display: none"
       @change="handleFileSelect"
     />
+
+    <!-- 通知组件：仅用于密码修改相关提示 -->
+    <Notification
+      ref="successNotification"
+      :message="successMessage"
+      type="success"
+      :duration="3000"
+    />
+    <Notification
+      ref="errorNotification"
+      :message="errorMessage"
+      type="error"
+      :duration="3000"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import apiClient from '../api';
 import AvatarCropper from '../components/AvatarCropper.vue';
+import Notification from '../components/Notification.vue';
 
 const authStore = useAuthStore();
+const router = useRouter();
 
 // 状态控制
 const isEditing = ref(false);
@@ -233,6 +250,12 @@ const passwordData = ref({
   new_password: '',
   confirm_password: ''
 });
+
+// 通知相关
+const successNotification = ref(null);
+const errorNotification = ref(null);
+const successMessage = ref('');
+const errorMessage = ref('');
 
 // 计算属性
 const displayName = computed(() => {
@@ -351,15 +374,18 @@ const saveProfile = async () => {
   }
 };
 
-// 修改密码
+// 修改密码（使用统一通知组件 + 成功后强制登出并弹出登录框）
 const changePassword = async () => {
+  // 基础校验
   if (passwordData.value.new_password !== passwordData.value.confirm_password) {
-    alert('两次输入的密码不一致');
+    errorMessage.value = '两次输入的密码不一致';
+    errorNotification.value?.show();
     return;
   }
 
-  if (passwordData.value.new_password.length < 6) {
-    alert('新密码长度至少6位');
+  if ((passwordData.value.new_password || '').length < 6) {
+    errorMessage.value = '新密码长度至少6位';
+    errorNotification.value?.show();
     return;
   }
 
@@ -367,9 +393,10 @@ const changePassword = async () => {
   try {
     const token = localStorage.getItem('accessToken'); // 使用正确的key
     const refreshToken = localStorage.getItem('refreshToken'); // 使用正确的key
-    
+
     if (!token || !refreshToken) {
-      alert('请先登录');
+      errorMessage.value = '请先登录';
+      errorNotification.value?.show();
       return;
     }
 
@@ -380,15 +407,29 @@ const changePassword = async () => {
     });
 
     if (response.data.code === 200) {
-      alert('密码修改成功！');
+      // 成功：提示后强制登出并跳转首页，随后弹登录框
+      successMessage.value = '密码修改成功，请重新登录';
+      successNotification.value?.show();
       cancelPasswordChange();
+
+      setTimeout(async () => {
+        try {
+          await authStore.logout();
+        } finally {
+          // 方案A：跳转首页
+          router.push('/');
+          // 弹出登录框
+          authStore.showLoginModal();
+        }
+      }, 1200);
     } else {
-      alert(response.data.message || '密码修改失败');
+      errorMessage.value = response.data.message || '密码修改失败';
+      errorNotification.value?.show();
     }
   } catch (error) {
     console.error('修改密码失败:', error);
-    const errorMessage = error.response?.data?.message || '密码修改失败，请稍后重试';
-    alert(errorMessage);
+    errorMessage.value = error.response?.data?.message || '密码修改失败，请稍后重试';
+    errorNotification.value?.show();
   } finally {
     changingPassword.value = false;
   }
