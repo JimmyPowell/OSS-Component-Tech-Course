@@ -34,6 +34,10 @@ class CourseResourceUpdate(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[str] = None
     resource_url: Optional[str] = None
+    # 更新时可选字段：与创建保持一致
+    is_repost: Optional[bool] = Field(default=None, description="是否转载（仅视频有效）")
+    source_platform: Optional[str] = Field(default=None, max_length=50, description="转载来源平台（仅视频有效）")
+    sort_order: Optional[int] = Field(default=None, description="排序值：越小越靠前，未设置(Null)排在最后")
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     status: Optional[CourseResourceStatus] = None
