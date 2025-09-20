@@ -32,6 +32,9 @@ class CourseResource(Base):
     deleted_at = Column(TIMESTAMP, nullable=True, index=True)
     cover_url = Column(String(512), nullable=True)
     resource_url = Column(String(512), nullable=False)
+    # 转载相关：是否转载、转载来源平台
+    is_repost = Column(INTEGER(unsigned=True), nullable=False, server_default='0')
+    source_platform = Column(String(50), nullable=True)
     file_size = Column(INTEGER(unsigned=True), nullable=True)
     mime_type = Column(String(100), nullable=True)
     download_count = Column(INTEGER(unsigned=True), nullable=False, server_default='0')

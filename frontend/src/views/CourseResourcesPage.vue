@@ -131,9 +131,16 @@
                   </div>
                   <div class="ppt-body">
                     <div class="card-grid mb-10">
-                      <div class="card-title">{{ video.name }}</div>
+                      <div class="card-title">
+                        <template v-if="video.is_repost">
+                          【转载自{{ video.source_platform || '其他' }}】{{ video.name }}
+                        </template>
+                        <template v-else>
+                          {{ video.name }}
+                        </template>
+                      </div>
                     </div>
-                    <div class="card-desc">{{ video.description || '精彩视频内容，点击观看' }}</div>
+                    <div class="card-desc">{{ video.summary || video.description || '精彩视频内容，点击观看' }}</div>
                   </div>
                 </div>
               </router-link>

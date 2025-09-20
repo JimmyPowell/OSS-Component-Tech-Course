@@ -19,6 +19,13 @@ from app.utils.response import Success, NotFound, BadRequest
 router = APIRouter()
 
 
+def _is_valid_http_url(url: str) -> bool:
+    try:
+        return isinstance(url, str) and url.startswith(("http://", "https://")) and len(url) <= 512
+    except Exception:
+        return False
+
+
 @router.post("/")
 def create_course_resource(
     *,
@@ -39,6 +46,18 @@ def create_course_resource(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
+    # 基础校验：视频类型下的转载逻辑
+    if resource_in.type == 'video':
+        if resource_in.is_repost:
+            if not resource_in.source_platform:
+                return BadRequest(message="转载平台不能为空")
+            if not _is_valid_http_url(resource_in.resource_url):
+                return BadRequest(message="原始视频URL无效，需以http或https开头")
+        else:
+            # 原创视频：要求有效的资源URL（前端通过上传生成），长度校验
+            if not _is_valid_http_url(resource_in.resource_url):
+                return BadRequest(message="视频资源URL无效，请先上传生成可访问地址")
+
     resource = crud_course_resource.create_course_resource(db=db, resource_in=resource_in, creator_id=user.id)
     return Success(data=CourseResourceResponse.from_orm(resource).model_dump())
 
@@ -93,6 +112,17 @@ def create_course_resource_admin(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
+    # 基础校验：视频类型下的转载逻辑
+    if resource_in.type == 'video':
+        if resource_in.is_repost:
+            if not resource_in.source_platform:
+                return BadRequest(message="转载平台不能为空")
+            if not _is_valid_http_url(resource_in.resource_url):
+                return BadRequest(message="原始视频URL无效，需以http或https开头")
+        else:
+            if not _is_valid_http_url(resource_in.resource_url):
+                return BadRequest(message="视频资源URL无效，请先上传生成可访问地址")
+
     resource = crud_course_resource.create_course_resource(db=db, resource_in=resource_in, creator_id=user.id)
     return Success(data=CourseResourceResponse.from_orm(resource).model_dump())
 
@@ -210,6 +240,23 @@ def update_course_resource_admin(
     resource = crud_course_resource.get_course_resource_by_uuid(db=db, uuid=uuid)
     if not resource:
         return NotFound(message="Course resource not found")
+    # 进行基础业务校验
+    # 计算更新后的最终状态
+    final_is_repost = resource_in.is_repost if resource_in.is_repost is not None else getattr(resource, 'is_repost', False)
+    final_type = resource_in.type if resource_in.type is not None else resource.type
+    final_resource_url = resource_in.resource_url if resource_in.resource_url is not None else resource.resource_url
+    final_source_platform = resource_in.source_platform if resource_in.source_platform is not None else getattr(resource, 'source_platform', None)
+
+    if final_type == 'video':
+        if final_is_repost:
+            if not final_source_platform:
+                return BadRequest(message="转载平台不能为空")
+            if not _is_valid_http_url(final_resource_url):
+                return BadRequest(message="原始视频URL无效，需以http或https开头")
+        else:
+            if not _is_valid_http_url(final_resource_url):
+                return BadRequest(message="视频资源URL无效，请先上传生成可访问地址")
+
     resource = crud_course_resource.update_course_resource(db=db, db_obj=resource, obj_in=resource_in)
     return Success(data=CourseResourceResponse.from_orm(resource).model_dump())
 

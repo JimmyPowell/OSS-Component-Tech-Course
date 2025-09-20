@@ -26,6 +26,8 @@ const editForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  is_repost: false,
+  source_platform: '',
   file_size: null,
   mime_type: ''
 });
@@ -39,6 +41,8 @@ const addResourceForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  is_repost: false,
+  source_platform: '',
   file_size: null,
   mime_type: 'video/mp4'
 });
@@ -72,6 +76,8 @@ const columnSettingsVisible = ref(false);
 const availableColumns = [
   { key: 'cover_url', title: '视频封面预览', visible: true },
   { key: 'name', title: '视频名称', visible: true },
+  { key: 'is_repost', title: '是否转载', visible: true },
+  { key: 'source_platform', title: '转载平台', visible: true },
   { key: 'uuid', title: '视频编号', visible: false },
   { key: 'description', title: '视频描述', visible: true },
   { key: 'file_size', title: '文件大小', visible: true },
@@ -136,6 +142,8 @@ const addNewResource = () => {
     description: '',
     cover_url: '',
     resource_url: '',
+    is_repost: false,
+    source_platform: '',
     file_size: null,
     mime_type: 'video/mp4'
   });
@@ -176,10 +184,23 @@ const handleTableChange = (page, pageSize) => {
   fetchResources(page, pageSize, searchValue.value);
 };
 
-const viewResource = (uuid) => {
-  // 在新标签页打开视频预览
-  const url = `${import.meta.env.BASE_URL}video-preview/${uuid}`;
-  window.open(url, '_blank');
+const viewResource = (recordOrUuid) => {
+  // 支持传入整行记录或uuid
+  let record = null;
+  if (typeof recordOrUuid === 'string') {
+    record = resources.value.find(r => r.uuid === recordOrUuid);
+  } else {
+    record = recordOrUuid;
+  }
+  if (!record) return;
+  if (record.is_repost) {
+    // 转载：直接前往原始视频地址
+    if (record.resource_url) window.open(record.resource_url, '_blank');
+  } else {
+    // 原创：打开预览页面
+    const url = `${import.meta.env.BASE_URL}video-preview/${record.uuid}`;
+    window.open(url, '_blank');
+  }
 };
 
 const editResource = async (uuid) => {
@@ -194,6 +215,8 @@ const editResource = async (uuid) => {
       editForm.description = resource.description || '';
       editForm.cover_url = resource.cover_url || '';
       editForm.resource_url = resource.resource_url;
+      editForm.is_repost = !!resource.is_repost;
+      editForm.source_platform = resource.source_platform || '';
       editForm.file_size = resource.file_size;
       editForm.mime_type = resource.mime_type || '';
       
@@ -228,6 +251,22 @@ const handleEditSubmit = async () => {
     if (editForm.summary && editForm.summary.length > 50) {
       message.error('摘要长度不能超过50个字');
       return;
+    }
+    // 业务校验
+    if (editForm.is_repost) {
+      if (!editForm.resource_url || !/^https?:\/\//.test(editForm.resource_url)) {
+        message.error('请填写有效的原始视频URL');
+        return;
+      }
+      if (!editForm.source_platform || !editForm.source_platform.trim()) {
+        message.error('请填写转载平台');
+        return;
+      }
+    } else {
+      if (!editForm.resource_url) {
+        message.error('请先上传视频文件');
+        return;
+      }
     }
     const response = await request.put(`${ADMIN_API_BASE_URL}/${editingResource.value.uuid}`, editForm);
     
@@ -883,15 +922,25 @@ const handleAddResource = async () => {
     message.error('摘要长度不能超过50个字');
     return;
   }
-  
-  if (!addResourceForm.resource_url) {
-    message.error('请先上传视频文件');
-    return;
-  }
-  
-  if (isUploading.value) {
-    message.error('视频文件正在上传中，请稍候...');
-    return;
+  // 根据是否转载进行校验
+  if (addResourceForm.is_repost) {
+    if (!addResourceForm.resource_url || !/^https?:\/\//.test(addResourceForm.resource_url)) {
+      message.error('请填写有效的原始视频URL');
+      return;
+    }
+    if (!addResourceForm.source_platform || !addResourceForm.source_platform.trim()) {
+      message.error('请填写转载平台');
+      return;
+    }
+  } else {
+    if (!addResourceForm.resource_url) {
+      message.error('请先上传视频文件');
+      return;
+    }
+    if (isUploading.value) {
+      message.error('视频文件正在上传中，请稍候...');
+      return;
+    }
   }
 
   try {
@@ -1048,6 +1097,19 @@ onUnmounted(() => {
           <template v-else-if="column.key === 'file_size'">
             {{ formatFileSize(record.file_size) }}
           </template>
+          <template v-else-if="column.key === 'name'">
+            <span>
+              <a-tag color="blue" v-if="record.is_repost" style="margin-right:6px;">转载</a-tag>
+              {{ record.name || '-' }}
+              <span v-if="record.is_repost && record.source_platform" style="color:#999;margin-left:6px;">（{{ record.source_platform }}）</span>
+            </span>
+          </template>
+          <template v-else-if="column.key === 'is_repost'">
+            <a-tag :color="record.is_repost ? 'blue' : 'default'">{{ record.is_repost ? '是' : '否' }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'source_platform'">
+            {{ record.source_platform || '-' }}
+          </template>
           <template v-else-if="column.key === 'status'">
             <a-tag :color="record.status === 'published' ? 'green' : 'orange'">
               {{ statusOptions.find(opt => opt.value === record.status)?.label || record.status }}
@@ -1071,7 +1133,7 @@ onUnmounted(() => {
       <a-table-column key="action" title="操作" width="250" fixed="right">
         <template #default="{ record }">
           <div class="action-buttons">
-            <a-button size="small" @click="viewResource(record.uuid)">查看</a-button>
+            <a-button size="small" @click="viewResource(record)">查看</a-button>
             <a-button size="small" type="primary" @click="editResource(record.uuid)">编辑</a-button>
             <a-button 
               size="small" 
@@ -1112,7 +1174,10 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="editForm" layout="vertical">
-        <a-form-item label="更换视频文件">
+        <a-form-item>
+          <a-checkbox v-model:checked="editForm.is_repost">是否转载</a-checkbox>
+        </a-form-item>
+        <a-form-item v-if="!editForm.is_repost" label="更换视频文件">
           <a-upload
             v-model:file-list="editFileList"
             name="file"
@@ -1136,6 +1201,14 @@ onUnmounted(() => {
             如需更换视频文件，请重新上传。支持 MP4、AVI、MOV 等视频格式，文件大小不超过 500MB
           </div>
         </a-form-item>
+        <template v-else>
+          <a-form-item label="原始视频URL" required>
+            <a-input v-model:value="editForm.resource_url" placeholder="请输入原始视频地址，如 https://www.bilibili.com/..." />
+          </a-form-item>
+          <a-form-item label="转载平台" required>
+            <a-input v-model:value="editForm.source_platform" placeholder="B站 / YouTube / 腾讯视频 / 其他" />
+          </a-form-item>
+        </template>
         <a-form-item label="视频名称" required>
           <a-input v-model:value="editForm.name" placeholder="请输入视频名称" />
         </a-form-item>
@@ -1194,7 +1267,10 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="addResourceForm" layout="vertical">
-        <a-form-item label="上传视频文件" required>
+        <a-form-item>
+          <a-checkbox v-model:checked="addResourceForm.is_repost">是否转载</a-checkbox>
+        </a-form-item>
+        <a-form-item v-if="!addResourceForm.is_repost" label="上传视频文件" required>
           <a-upload
             v-model:file-list="fileList"
             name="file"
@@ -1218,6 +1294,17 @@ onUnmounted(() => {
             支持 MP4、AVI、MOV 等视频格式，文件大小不超过 500MB
           </div>
         </a-form-item>
+        <template v-else>
+          <a-form-item label="原始视频URL" required>
+            <a-input v-model:value="addResourceForm.resource_url" placeholder="请输入原始视频地址，如 https://www.bilibili.com/..." />
+          </a-form-item>
+          <a-form-item label="转载平台" required>
+            <a-input v-model:value="addResourceForm.source_platform" placeholder="B站 / YouTube / 腾讯视频 / 其他" />
+          </a-form-item>
+          <div style="margin-top: -8px; margin-bottom: 8px; font-size: 12px; color: #666;">
+            勾选“是否转载”后，无需上传视频文件，仅需填写原始视频URL和平台。
+          </div>
+        </template>
         <a-form-item label="视频名称" required>
           <a-input v-model:value="addResourceForm.name" placeholder="请输入视频名称" />
         </a-form-item>

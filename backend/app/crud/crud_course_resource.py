@@ -144,6 +144,8 @@ def get_course_resource_detail_by_uuid(db: Session, *, uuid: str, status_filter:
         'description': resource.description,
         'cover_url': resource.cover_url,
         'resource_url': resource.resource_url,
+        'is_repost': bool(getattr(resource, 'is_repost', False)),
+        'source_platform': getattr(resource, 'source_platform', None),
         'file_size': resource.file_size,
         'mime_type': resource.mime_type,
         'status': resource.status,

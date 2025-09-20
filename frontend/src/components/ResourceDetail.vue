@@ -10,9 +10,12 @@
     </div>
     
     <div v-else-if="resourceDetail" class="course-detail-content">
-      <!-- 左侧资源封面 -->
+      <!-- 左侧资源封面（视频按16:9横版显示，其它沿用书籍封面样式） -->
       <div class="book-cover-section">
-        <div class="book-cover">
+        <div v-if="isVideoResource" class="video-cover">
+          <img :src="getResourceCover()" :alt="resourceDetail.name" />
+        </div>
+        <div v-else class="book-cover">
           <img :src="getResourceCover()" :alt="resourceDetail.name">
           <div v-if="isAttachment" class="file-type-overlay">
             {{ getFileExtension() }}
@@ -34,9 +37,13 @@
         <div class="course-header">
           <h2>{{ resourceDetail.name }}</h2>
           <div class="preview-buttons">
-            <button v-if="resourceDetail.resource_url && isVideoResource" class="btn-preview" @click="previewVideo">
+            <button v-if="resourceDetail.resource_url && isVideoResource && !isRepost" class="btn-preview" @click="previewVideo">
               <span class="iconfont icon-link"></span>
               视频预览
+            </button>
+            <button v-else-if="resourceDetail.resource_url && isVideoResource && isRepost" class="btn-preview" @click="openOriginalVideo">
+              <span class="iconfont icon-link"></span>
+              前往原平台观看
             </button>
             <button v-else-if="resourceDetail.resource_url && isOfficeDocument" class="btn-preview" @click="previewOfficeDocument">
               <span class="iconfont icon-link"></span>
@@ -73,6 +80,10 @@
             <span>下载次数:</span>
             <span>{{ resourceDetail.download_count }}</span>
           </div>
+          <div class="meta-item" v-if="isVideoResource && resourceDetail.is_repost">
+            <span>来源平台:</span>
+            <span>{{ resourceDetail.source_platform || '其他' }}</span>
+          </div>
         </div>
         
         <div class="course-info">
@@ -80,7 +91,7 @@
           <p>{{ resourceDetail.description || (isAttachment ? '点击下载此附件' : '暂无描述') }}</p>
         </div>
         
-        <div class="course-actions">
+        <div class="course-actions" v-if="!(isVideoResource && isRepost)">
           <button class="btn btn-primary btn-download" @click="handleDownload" :disabled="downloading">
             <span class="iconfont icon-xiazai"></span>
             {{ downloading ? '下载中...' : `下载${getResourceTypeText()}` }}
@@ -128,6 +139,9 @@ const fileSizeText = ref('');
 const toastProgress = ref(0);
 
 // 计算属性
+const isRepost = computed(() => {
+  return !!resourceDetail.value?.is_repost;
+});
 const isAttachment = computed(() => {
   return resourceDetail.value?.type === 'attachment';
 });
@@ -314,6 +328,13 @@ const previewVideo = () => {
   }
 };
 
+// 前往原平台观看
+const openOriginalVideo = () => {
+  if (resourceDetail.value?.resource_url) {
+    window.open(resourceDetail.value.resource_url, '_blank');
+  }
+};
+
 // 显示文件大小超限Toast并自动下载
 const showFileSizeToastAndDownload = (sizeMB, originalUrl) => {
   fileSizeText.value = `${sizeMB}MB`;
@@ -491,6 +512,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 视频封面：16:9横版自适应容器 */
+.video-cover {
+  width: 560px;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.video-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 如需不裁切可改为 contain */
 }
 
 .book-cover img {
@@ -778,6 +816,11 @@ onMounted(() => {
     max-width: 280px;
     margin: 0 auto;
     height: 320px;
+  }
+
+  .video-cover {
+    width: 100%;
+    aspect-ratio: 16 / 9;
   }
   
   .course-info-section {

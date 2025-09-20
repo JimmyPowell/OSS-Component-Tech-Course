@@ -17,6 +17,8 @@ class CourseResourceBase(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[str] = None
     resource_url: str
+    is_repost: bool = Field(default=False, description="是否转载")
+    source_platform: Optional[str] = Field(default=None, max_length=50, description="转载来源平台")
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     status: CourseResourceStatus = Field(default=CourseResourceStatus.draft, description="资源状态")
@@ -54,6 +56,8 @@ class CourseResourceResponse(BaseModel):
     description: Optional[str]
     cover_url: Optional[str]
     resource_url: str
+    is_repost: bool
+    source_platform: Optional[str]
     file_size: Optional[int]
     mime_type: Optional[str]
     status: CourseResourceStatus
@@ -77,6 +81,8 @@ class CourseResourceDetailResponse(BaseModel):
     description: Optional[str]
     cover_url: Optional[str]
     resource_url: str
+    is_repost: bool
+    source_platform: Optional[str]
     file_size: Optional[int]
     mime_type: Optional[str]
     status: CourseResourceStatus
