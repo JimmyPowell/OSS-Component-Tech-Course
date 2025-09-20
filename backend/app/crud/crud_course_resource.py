@@ -140,6 +140,7 @@ def get_course_resource_detail_by_uuid(db: Session, *, uuid: str, status_filter:
         'uuid': resource.uuid,
         'name': resource.name,
         'type': resource.type,
+        'summary': resource.summary,
         'description': resource.description,
         'cover_url': resource.cover_url,
         'resource_url': resource.resource_url,

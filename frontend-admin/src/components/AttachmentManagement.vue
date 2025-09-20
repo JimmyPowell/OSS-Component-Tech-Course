@@ -22,6 +22,7 @@ const editDrawerVisible = ref(false);
 const editingResource = ref(null);
 const editForm = reactive({
   name: '',
+  summary: '',
   description: '',
   cover_url: '',
   resource_url: '',
@@ -34,6 +35,7 @@ const addResourceDrawerVisible = ref(false);
 const addResourceForm = reactive({
   name: '',
   type: 'attachment',
+  summary: '',
   description: '',
   cover_url: '',
   resource_url: '',
@@ -174,6 +176,7 @@ const addNewResource = () => {
   Object.assign(addResourceForm, {
     name: '',
     type: 'attachment',
+    summary: '',
     description: '',
     cover_url: '',
     resource_url: '',
@@ -238,6 +241,7 @@ const editResource = async (uuid) => {
       const resource = response.data.data;
       editingResource.value = resource;
       editForm.name = resource.name;
+      editForm.summary = resource.summary || '';
       editForm.description = resource.description || '';
       editForm.cover_url = resource.cover_url || '';
       editForm.resource_url = resource.resource_url;
@@ -272,6 +276,10 @@ const editResource = async (uuid) => {
 
 const handleEditSubmit = async () => {
   try {
+    if (editForm.summary && editForm.summary.length > 50) {
+      message.error('摘要长度不能超过50个字');
+      return;
+    }
     const response = await request.put(`${ADMIN_API_BASE_URL}/${editingResource.value.uuid}`, editForm);
     
     if (response.data.code === 200) {
@@ -1007,6 +1015,10 @@ const handleAddResource = async () => {
     message.error('请输入附件名称');
     return;
   }
+  if (addResourceForm.summary && addResourceForm.summary.length > 50) {
+    message.error('摘要长度不能超过50个字');
+    return;
+  }
   
   if (!addResourceForm.resource_url) {
     message.error('请先上传附件文件');
@@ -1262,6 +1274,9 @@ onUnmounted(() => {
         <a-form-item label="附件名称" required>
           <a-input v-model:value="editForm.name" placeholder="请输入附件名称" />
         </a-form-item>
+        <a-form-item label="附件摘要">
+          <a-input v-model:value="editForm.summary" placeholder="请输入附件摘要（50字以内）" :maxlength="50" show-count />
+        </a-form-item>
         <a-form-item label="更换封面图">
           <a-upload
             v-model:file-list="editCoverFileList"
@@ -1342,6 +1357,9 @@ onUnmounted(() => {
         <a-form-item label="附件名称" required>
           <a-input v-model:value="addResourceForm.name" placeholder="请输入附件名称" />
         </a-form-item>
+        <a-form-item label="附件摘要">
+          <a-input v-model:value="addResourceForm.summary" placeholder="请输入附件摘要（50字以内）" :maxlength="50" show-count />
+        </a-form-item>
         <a-form-item label="上传封面图">
           <a-upload
             v-model:file-list="coverFileList"
@@ -1400,6 +1418,9 @@ onUnmounted(() => {
           </a-descriptions-item>
           <a-descriptions-item label="附件编号">
             {{ resourceDetail.uuid }}
+          </a-descriptions-item>
+          <a-descriptions-item label="附件摘要">
+            {{ resourceDetail.summary || '-' }}
           </a-descriptions-item>
           <a-descriptions-item label="附件描述">
             {{ resourceDetail.description || '-' }}

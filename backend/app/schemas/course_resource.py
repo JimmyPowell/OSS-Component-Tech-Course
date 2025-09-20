@@ -13,6 +13,7 @@ class CourseResourceStatus(str, Enum):
 class CourseResourceBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     type: str
+    summary: Optional[str] = Field(None, max_length=50, description="简短摘要，50字以内")
     description: Optional[str] = None
     cover_url: Optional[str] = None
     resource_url: str
@@ -26,6 +27,7 @@ class CourseResourceCreate(CourseResourceBase):
 class CourseResourceUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     type: Optional[str] = None
+    summary: Optional[str] = Field(None, max_length=50, description="简短摘要，50字以内")
     description: Optional[str] = None
     cover_url: Optional[str] = None
     resource_url: Optional[str] = None
@@ -48,6 +50,7 @@ class CourseResourceResponse(BaseModel):
     uuid: str
     name: str
     type: str
+    summary: Optional[str]
     description: Optional[str]
     cover_url: Optional[str]
     resource_url: str
@@ -70,6 +73,7 @@ class CourseResourceDetailResponse(BaseModel):
     uuid: str
     name: str
     type: str
+    summary: Optional[str]
     description: Optional[str]
     cover_url: Optional[str]
     resource_url: str

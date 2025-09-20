@@ -22,7 +22,7 @@
                     <div class="card-grid mb-10">
                       <div class="card-title">{{ ppt.name }}</div>
                     </div>
-                    <div class="card-desc">{{ ppt.description || '暂无描述' }}</div>
+                    <div class="card-desc">{{ ppt.summary || '暂无摘要' }}</div>
                   </div>
                 </div>
               </router-link>

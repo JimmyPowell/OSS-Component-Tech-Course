@@ -17,6 +17,7 @@ class CourseResource(Base):
     id = Column(INTEGER(unsigned=True), primary_key=True, autoincrement=True)
     uuid = Column(String(36), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False, index=True)
+    summary = Column(String(512), nullable=True)
     type = Column(Enum('ppt', 'video', 'attachment', 'other'), nullable=False, index=True)
     description = Column(TEXT, nullable=True)
     creator_id = Column(INTEGER(unsigned=True), nullable=False, index=True)
