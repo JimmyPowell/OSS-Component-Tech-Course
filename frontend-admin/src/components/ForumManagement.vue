@@ -78,7 +78,7 @@ const fetchCategories = async (page = 1, pageSize = 20, search = '') => {
       params.append('name', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${API_BASE_URL}/?${params}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
@@ -104,7 +104,7 @@ const handleAddCategory = async () => {
       return;
     }
 
-    const response = await request.post(API_BASE_URL, addCategoryForm);
+    const response = await request.post(`${API_BASE_URL}/`, addCategoryForm);
     
     if (response.data.code === 200) {
       message.success('分类添加成功');

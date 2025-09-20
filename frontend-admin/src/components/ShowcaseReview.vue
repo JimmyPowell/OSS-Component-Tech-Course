@@ -369,7 +369,7 @@ const handleAddShowcase = async () => {
       return;
     }
 
-    const response = await request.post(API_BASE_URL, addShowcaseForm);
+    const response = await request.post(`${API_BASE_URL}/`, addShowcaseForm);
     
     if (response.data.code === 200) {
       message.success('作品添加成功');

@@ -54,7 +54,7 @@ const fetchPosts = async (page = 1, pageSize = 20, search = '') => {
       params.append('title', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${API_BASE_URL}/?${params}`);
     
     if (response.data.code === 200) {
       posts.value = response.data.data.items;

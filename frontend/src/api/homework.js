@@ -23,7 +23,7 @@ export const getHomeworkList = async (params = {}) => {
     if (start_time) queryParams.append('start_time', start_time);
     if (end_time) queryParams.append('end_time', end_time);
     
-    const response = await apiClient.get(`/homeworks?${queryParams.toString()}`);
+    const response = await apiClient.get(`/homeworks/?${queryParams.toString()}`);
     // 后端统一响应格式: { code, message, data }
     if (response.data.code === 200) {
       return {
@@ -75,7 +75,7 @@ export const getHomeworkDetail = async (uuid) => {
 // 创建作业（管理员功能）
 export const createHomework = async (homeworkData) => {
   try {
-    const response = await apiClient.post('/homeworks', homeworkData);
+    const response = await apiClient.post('/homeworks/', homeworkData);
     if (response.data.code === 200) {
       return {
         success: true,

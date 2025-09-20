@@ -107,7 +107,7 @@ const fetchResources = async (page = 1, pageSize = 20, search = '') => {
       params.append('name', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${API_BASE_URL}/?${params}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
@@ -1036,7 +1036,7 @@ const handleAddResource = async () => {
   }
 
   try {
-    const response = await request.post(API_BASE_URL, addResourceForm);
+    const response = await request.post(`${API_BASE_URL}/`, addResourceForm);
     
     if (response.data.code === 200) {
       message.success('PPT创建成功');

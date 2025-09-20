@@ -89,7 +89,7 @@ const fetchAnnouncements = async (page = 1, pageSize = 20, search = '') => {
       params.append('name', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${API_BASE_URL}/?${params}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
@@ -350,7 +350,7 @@ const handleAddAnnouncement = async () => {
       return;
     }
 
-    const response = await request.post(API_BASE_URL, addAnnouncementForm);
+    const response = await request.post(`${API_BASE_URL}/`, addAnnouncementForm);
     
     if (response.data.code === 200) {
       message.success('公告添加成功');

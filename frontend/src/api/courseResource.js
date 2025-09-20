@@ -25,7 +25,7 @@ export const getCourseResources = async (params = {}) => {
     if (start_time) queryParams.append('start_time', start_time);
     if (end_time) queryParams.append('end_time', end_time);
     
-    const response = await apiClient.get(`/course-resources?${queryParams.toString()}`);
+    const response = await apiClient.get(`/course-resources/?${queryParams.toString()}`);
     // 后端统一响应格式: { code, message, data }
     if (response.data.code === 200) {
       return {

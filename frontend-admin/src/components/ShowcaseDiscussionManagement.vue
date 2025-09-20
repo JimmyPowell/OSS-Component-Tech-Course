@@ -42,7 +42,7 @@ const fetchDiscussions = async (page = 1, pageSize = 20, search = '') => {
   loading.value = true;
   try {
     // 先获取所有作品
-    const showcasesResponse = await request.get(`${API_BASE}/admin/showcases`);
+    const showcasesResponse = await request.get(`${API_BASE}/admin/showcases/`);
     if (showcasesResponse.data.code !== 200) {
       message.error('获取作品列表失败');
       return;
@@ -60,7 +60,7 @@ const fetchDiscussions = async (page = 1, pageSize = 20, search = '') => {
           limit: '100'
         });
         
-        const commentsResponse = await request.get(`${API_BASE_URL}?${params}`);
+        const commentsResponse = await request.get(`${API_BASE_URL}/?${params}`);
         if (commentsResponse.data.code === 200) {
           const comments = commentsResponse.data.data.items.map(comment => ({
             ...comment,

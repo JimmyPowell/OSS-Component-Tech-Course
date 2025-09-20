@@ -103,7 +103,7 @@ const fetchUsers = async (page = 1, pageSize = 20, search = '') => {
       params.append('search', search);
     }
 
-    const response = await request.get(`${API_BASE_URL}?${params}`);
+    const response = await request.get(`${API_BASE_URL}/?${params}`);
 
     if (response.data.code === 200) {
       const data = response.data.data;
@@ -407,7 +407,7 @@ const deleteUser = (userId) => {
 // 添加用户
 const handleAddUser = async () => {
   try {
-    const response = await request.post(API_BASE_URL, addUserForm);
+    const response = await request.post(`${API_BASE_URL}/`, addUserForm);
     
     if (response.data.code === 201) {
       message.success('用户创建成功');
