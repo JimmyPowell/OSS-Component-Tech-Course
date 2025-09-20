@@ -19,6 +19,7 @@ class CourseResourceBase(BaseModel):
     resource_url: str
     is_repost: bool = Field(default=False, description="是否转载")
     source_platform: Optional[str] = Field(default=None, max_length=50, description="转载来源平台")
+    sort_order: Optional[int] = Field(default=None, description="排序值：越小越靠前，未设置(Null)排在最后")
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     status: CourseResourceStatus = Field(default=CourseResourceStatus.draft, description="资源状态")
@@ -58,6 +59,7 @@ class CourseResourceResponse(BaseModel):
     resource_url: str
     is_repost: bool
     source_platform: Optional[str]
+    sort_order: Optional[int]
     file_size: Optional[int]
     mime_type: Optional[str]
     status: CourseResourceStatus
@@ -83,6 +85,7 @@ class CourseResourceDetailResponse(BaseModel):
     resource_url: str
     is_repost: bool
     source_platform: Optional[str]
+    sort_order: Optional[int]
     file_size: Optional[int]
     mime_type: Optional[str]
     status: CourseResourceStatus

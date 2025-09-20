@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, case
 from typing import Optional, Tuple
 from datetime import datetime
 import uuid
@@ -65,7 +65,15 @@ def get_multi(
         query = query.filter(and_(*filters))
 
     total = query.count()
-    items = query.order_by(CourseResource.created_at.desc()).offset(skip).limit(limit).all()
+    # 非空优先(ASC: False->0 在前, True->1 在后)，数值小靠前，其次时间倒序
+    nulls_last = case((CourseResource.sort_order.is_(None), 1), else_=0)
+    items = (
+        query
+        .order_by(nulls_last.asc(), CourseResource.sort_order.asc(), CourseResource.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
     return total, items
 

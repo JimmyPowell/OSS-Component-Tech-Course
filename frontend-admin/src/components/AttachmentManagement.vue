@@ -26,6 +26,7 @@ const editForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  sort_order: null,
   file_size: null,
   mime_type: ''
 });
@@ -39,6 +40,7 @@ const addResourceForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  sort_order: null,
   file_size: null,
   mime_type: 'application/pdf'
 });
@@ -72,6 +74,7 @@ const columnSettingsVisible = ref(false);
 const availableColumns = [
   { key: 'cover_url', title: '文件图标', visible: true },
   { key: 'name', title: '附件名称', visible: true },
+  { key: 'sort_order', title: '排序值', visible: true },
   { key: 'uuid', title: '附件编号', visible: false },
   { key: 'description', title: '附件描述', visible: true },
   { key: 'file_size', title: '文件大小', visible: true },
@@ -245,6 +248,7 @@ const editResource = async (uuid) => {
       editForm.description = resource.description || '';
       editForm.cover_url = resource.cover_url || '';
       editForm.resource_url = resource.resource_url;
+      editForm.sort_order = resource.sort_order ?? null;
       editForm.file_size = resource.file_size;
       editForm.mime_type = resource.mime_type || '';
       
@@ -1245,8 +1249,11 @@ onUnmounted(() => {
       placement="left"
       @close="editDrawerVisible = false"
       :maskClosable="true"
-    >
+      >
       <a-form :model="editForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="editForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item label="更换附件文件">
           <a-upload
             v-model:file-list="editFileList"
@@ -1328,8 +1335,11 @@ onUnmounted(() => {
       placement="left"
       @close="addResourceDrawerVisible = false"
       :maskClosable="true"
-    >
+      >
       <a-form :model="addResourceForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="addResourceForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item label="上传附件文件" required>
           <a-upload
             v-model:file-list="fileList"

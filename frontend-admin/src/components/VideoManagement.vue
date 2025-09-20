@@ -28,6 +28,7 @@ const editForm = reactive({
   resource_url: '',
   is_repost: false,
   source_platform: '',
+  sort_order: null,
   file_size: null,
   mime_type: ''
 });
@@ -43,6 +44,7 @@ const addResourceForm = reactive({
   resource_url: '',
   is_repost: false,
   source_platform: '',
+  sort_order: null,
   file_size: null,
   mime_type: 'video/mp4'
 });
@@ -76,6 +78,7 @@ const columnSettingsVisible = ref(false);
 const availableColumns = [
   { key: 'cover_url', title: '视频封面预览', visible: true },
   { key: 'name', title: '视频名称', visible: true },
+  { key: 'sort_order', title: '排序值', visible: true },
   { key: 'is_repost', title: '是否转载', visible: true },
   { key: 'source_platform', title: '转载平台', visible: true },
   { key: 'uuid', title: '视频编号', visible: false },
@@ -217,6 +220,7 @@ const editResource = async (uuid) => {
       editForm.resource_url = resource.resource_url;
       editForm.is_repost = !!resource.is_repost;
       editForm.source_platform = resource.source_platform || '';
+      editForm.sort_order = resource.sort_order ?? null;
       editForm.file_size = resource.file_size;
       editForm.mime_type = resource.mime_type || '';
       
@@ -1097,6 +1101,9 @@ onUnmounted(() => {
           <template v-else-if="column.key === 'file_size'">
             {{ formatFileSize(record.file_size) }}
           </template>
+          <template v-else-if="column.key === 'sort_order'">
+            {{ record.sort_order ?? '-' }}
+          </template>
           <template v-else-if="column.key === 'name'">
             <span>
               <a-tag color="blue" v-if="record.is_repost" style="margin-right:6px;">转载</a-tag>
@@ -1174,6 +1181,9 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="editForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="editForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item>
           <a-checkbox v-model:checked="editForm.is_repost">是否转载</a-checkbox>
         </a-form-item>
@@ -1267,6 +1277,9 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="addResourceForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="addResourceForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item>
           <a-checkbox v-model:checked="addResourceForm.is_repost">是否转载</a-checkbox>
         </a-form-item>

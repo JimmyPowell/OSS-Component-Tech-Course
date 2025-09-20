@@ -26,6 +26,7 @@ const editForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  sort_order: null,
   file_size: null,
   mime_type: ''
 });
@@ -39,6 +40,7 @@ const addResourceForm = reactive({
   description: '',
   cover_url: '',
   resource_url: '',
+  sort_order: null,
   file_size: null,
   mime_type: 'application/vnd.ms-powerpoint'
 });
@@ -72,6 +74,7 @@ const columnSettingsVisible = ref(false);
 const availableColumns = [
   { key: 'cover_url', title: '封面预览', visible: true },
   { key: 'name', title: '课件名称', visible: true },
+  { key: 'sort_order', title: '排序值', visible: true },
   { key: 'uuid', title: '课件编号', visible: false },
   { key: 'description', title: '课件描述', visible: true },
   { key: 'status', title: '状态', visible: true },
@@ -944,6 +947,7 @@ const editResource = async (uuid) => {
       editForm.description = resource.description || '';
       editForm.cover_url = resource.cover_url || '';
       editForm.resource_url = resource.resource_url;
+      editForm.sort_order = resource.sort_order ?? null;
       editForm.file_size = resource.file_size;
       editForm.mime_type = resource.mime_type || '';
       
@@ -1229,6 +1233,9 @@ onUnmounted(() => {
               {{ statusOptions.find(s => s.value === record.status)?.label || record.status }}
             </a-tag>
           </template>
+          <template v-else-if="column.key === 'sort_order'">
+            {{ record.sort_order ?? '-' }}
+          </template>
           <template v-else-if="column.key === 'file_size'">
             {{ formatFileSize(record.file_size) }}
           </template>
@@ -1291,6 +1298,9 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="editForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="editForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item label="更换PPT文件">
           <a-upload
             v-model:file-list="editFileList"
@@ -1374,6 +1384,9 @@ onUnmounted(() => {
       :maskClosable="true"
     >
       <a-form :model="addResourceForm" layout="vertical">
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="addResourceForm.sort_order" :min="0" :step="1" style="width: 100%;" placeholder="越小越靠前；不填=默认排在最后" />
+        </a-form-item>
         <a-form-item label="上传PPT文件" required>
           <a-upload
             v-model:file-list="fileList"

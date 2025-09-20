@@ -27,6 +27,8 @@ class CourseResource(Base):
         nullable=False,
         comment="状态：草稿/已发布"
     )
+    # 全局排序（越小越靠前，NULL 表示默认在最后）
+    sort_order = Column(INTEGER(), nullable=True, index=True)
     created_at = Column(TIMESTAMP, nullable=False, server_default=func.now())
     updated_at = Column(TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(TIMESTAMP, nullable=True, index=True)
